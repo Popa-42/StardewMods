@@ -37,17 +37,8 @@ public interface IIcon
 
     /// <summary>Gets a component with the icon.</summary>
     /// <param name="style">The component style.</param>
-    /// <param name="x">The component x-coordinate.</param>
-    /// <param name="y">The component y-coordinate.</param>
-    /// <param name="scale">The target component scale.</param>
     /// <param name="name">The name.</param>
-    /// <param name="hoverText">The hover text.</param>
+    /// <param name="scale">The target component scale.</param>
     /// <returns>Returns a new button.</returns>
-    public ClickableTextureComponent Component(
-        IconStyle style,
-        int x = 0,
-        int y = 0,
-        float scale = Game1.pixelZoom,
-        string? name = null,
-        string? hoverText = null);
+    public ClickableTextureComponent Component(IconStyle style, string? name = null, float scale = Game1.pixelZoom);
 }

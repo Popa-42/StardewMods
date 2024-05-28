@@ -4,6 +4,9 @@ namespace StardewMods.FauxCore.Common.Helpers;
 using Microsoft.Xna.Framework;
 using StardewMods.FauxCore.Common.Models;
 using StardewMods.FauxCore.Common.Services.Integrations.BetterChests;
+using StardewMods.FauxCore.Common.UI;
+using StardewMods.FauxCore.Common.UI.Components;
+using StardewValley.Menus;
 using StardewValley.Mods;
 
 #else
@@ -12,6 +15,9 @@ namespace StardewMods.Common.Helpers;
 using Microsoft.Xna.Framework;
 using StardewMods.Common.Models;
 using StardewMods.Common.Services.Integrations.BetterChests;
+using StardewMods.Common.UI;
+using StardewMods.Common.UI.Components;
+using StardewValley.Menus;
 using StardewValley.Mods;
 #endif
 
@@ -20,6 +26,9 @@ internal static class CommonExtensions
 {
     private static readonly Dictionary<Color, Color> HighlightedColors = new();
     private static readonly Dictionary<Color, Color> MutedColors = new();
+
+    public static IComponentBuilder AsBuilder(this ClickableTextureComponent component) =>
+        new ComponentBuilder(component);
 
     /// <summary>Generate a box of coordinates centered at a specified point with a given radius.</summary>
     /// <param name="center">The center point of the box.</param>
