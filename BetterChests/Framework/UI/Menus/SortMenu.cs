@@ -34,34 +34,43 @@ internal sealed class SortMenu : SearchMenu
 
         this.saveButton = iconRegistry
             .Icon(InternalIcon.Save)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + Game1.tileSize + 16,
-                hoverText: I18n.Ui_Save_Name());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(new Point(this.xPositionOnScreen + this.width + 4, this.yPositionOnScreen + Game1.tileSize + 16))
+            .HoverText(I18n.Ui_Save_Name())
+            .Value;
 
         this.copyButton = iconRegistry
             .Icon(InternalIcon.Copy)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 2),
-                hoverText: I18n.Ui_Copy_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 2)))
+            .HoverText(I18n.Ui_Copy_Tooltip())
+            .Value;
 
         this.pasteButton = iconRegistry
             .Icon(InternalIcon.Paste)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 3),
-                hoverText: I18n.Ui_Paste_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 3)))
+            .HoverText(I18n.Ui_Paste_Tooltip())
+            .Value;
 
         this.okButton = iconRegistry
             .Icon(VanillaIcon.Ok)
-            .Component(
-                IconStyle.Transparent,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2));
+            .Component(IconStyle.Transparent)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2)))
+            .Value;
 
         this.allClickableComponents.Add(this.saveButton);
         this.allClickableComponents.Add(this.copyButton);
@@ -70,7 +79,25 @@ internal sealed class SortMenu : SearchMenu
     }
 
     /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
+    protected override List<Item> GetItems()
+    {
+        var items = this.searchExpression is null
+            ? ItemRepository.GetItems().ToList()
+            : ItemRepository.GetItems(this.searchExpression.Equals).ToList();
+
+        if (this.Expression is not null)
+        {
+            items.Sort(this.Expression);
+        }
+
+        return items;
+    }
+
+    /// <inheritdoc />
+    protected override bool HighlightMethod(Item item) => true;
+
+    /// <inheritdoc />
+    protected override bool TryLeftClick(Point cursor)
     {
         if (this.saveButton.bounds.Contains(cursor) && this.readyToClose())
         {
@@ -105,22 +132,4 @@ internal sealed class SortMenu : SearchMenu
 
         return false;
     }
-
-    /// <inheritdoc />
-    protected override List<Item> GetItems()
-    {
-        var items = this.searchExpression is null
-            ? ItemRepository.GetItems().ToList()
-            : ItemRepository.GetItems(this.searchExpression.Equals).ToList();
-
-        if (this.Expression is not null)
-        {
-            items.Sort(this.Expression);
-        }
-
-        return items;
-    }
-
-    /// <inheritdoc />
-    protected override bool HighlightMethod(Item item) => true;
 }

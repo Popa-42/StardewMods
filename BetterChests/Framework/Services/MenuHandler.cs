@@ -397,7 +397,7 @@ internal sealed class MenuHandler : BaseService<MenuHandler>
                 // Draw components
                 foreach (var component in this.components.Value)
                 {
-                    component.Draw(e.SpriteBatch, cursor, Point.Zero);
+                    component.Draw(e.SpriteBatch, cursor);
                 }
 
                 // Redraw foreground
@@ -664,13 +664,6 @@ internal sealed class MenuHandler : BaseService<MenuHandler>
                         top = menu;
                         bottom = menu.inventory;
                         break;
-                    case BaseMenu
-                    {
-                        Parent:
-                        { } baseMenuParent,
-                    }:
-                        newMenu = baseMenuParent;
-                        continue;
                     case not null when newMenu.GetParentMenu() is
                         { } parentMenu:
                         newMenu = parentMenu;

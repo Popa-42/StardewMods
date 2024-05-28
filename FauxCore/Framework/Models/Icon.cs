@@ -8,19 +8,31 @@ using StardewValley.Menus;
 /// <inheritdoc />
 internal sealed class Icon : IIcon
 {
-    private readonly Func<IIcon, IconStyle, int, int, float, string?, string?, ClickableTextureComponent> getComponent;
-    private readonly Func<IIcon, IconStyle, Texture2D> getTexture;
+    private readonly GetComponent getComponent;
+    private readonly GetTexture getTexture;
 
     /// <summary>Initializes a new instance of the <see cref="Icon" /> class.</summary>
     /// <param name="getTexture">A function that returns the button texture.</param>
     /// <param name="getComponent">A function that return a new button.</param>
-    public Icon(
-        Func<IIcon, IconStyle, Texture2D> getTexture,
-        Func<IIcon, IconStyle, int, int, float, string?, string?, ClickableTextureComponent> getComponent)
+    public Icon(GetTexture getTexture, GetComponent getComponent)
     {
         this.getTexture = getTexture;
         this.getComponent = getComponent;
     }
+
+    /// <summary>Gets a component from the icon.</summary>
+    /// <param name="icon">The icon.</param>
+    /// <param name="style">The icon style.</param>
+    /// <param name="name">The component name.</param>
+    /// <param name="scale">The component scale.</param>
+    /// <returns>Returns the icon component.</returns>
+    public delegate ClickableTextureComponent GetComponent(IIcon icon, IconStyle style, string? name, float scale);
+
+    /// <summary>Gets a texture from the icon.</summary>
+    /// <param name="icon">The icon.</param>
+    /// <param name="style">The icon style.</param>
+    /// <returns>Returns the icon texture.</returns>
+    public delegate Texture2D GetTexture(IIcon icon, IconStyle style);
 
     /// <inheritdoc />
     public string UniqueId => $"{this.Source}/{this.Id}";
@@ -38,14 +50,8 @@ internal sealed class Icon : IIcon
     public string Source { get; set; } = string.Empty;
 
     /// <inheritdoc />
-    public ClickableTextureComponent Component(
-        IconStyle style,
-        int x = 0,
-        int y = 0,
-        float scale = Game1.pixelZoom,
-        string? name = null,
-        string? hoverText = null) =>
-        this.getComponent(this, style, x, y, scale, name, hoverText);
+    public ClickableTextureComponent Component(IconStyle style, string? name = null, float scale = Game1.pixelZoom) =>
+        this.getComponent(this, style, name, scale);
 
     /// <inheritdoc />
     public Texture2D Texture(IconStyle style) => this.getTexture(this, style);

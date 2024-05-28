@@ -58,6 +58,9 @@ public enum VanillaIcon
     /// <summary>A wrapped gift.</summary>
     Gift,
 
+    /// <summary>Scrollbar grabber.</summary>
+    Grabber,
+
     /// <summary>A filled heart.</summary>
     Heart,
 
@@ -84,6 +87,9 @@ public enum VanillaIcon
 
     /// <summary>A skull.</summary>
     Skull,
+
+    /// <summary>The stack button.</summary>
+    Stack,
 
     /// <summary>A sword.</summary>
     Sword,

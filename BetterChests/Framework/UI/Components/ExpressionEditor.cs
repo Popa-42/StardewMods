@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.FauxCore;
+using StardewMods.Common.UI;
 using StardewMods.Common.UI.Components;
 
 /// <summary>A component which represents an <see cref="IExpression" />.</summary>
@@ -19,22 +20,14 @@ internal abstract class ExpressionEditor : BaseComponent
     private readonly ICustomComponent warningIcon;
 
     /// <summary>Initializes a new instance of the <see cref="ExpressionEditor" /> class.</summary>
-    /// <param name="parent">The parent menu.</param>
     /// <param name="x">The component x-coordinate.</param>
     /// <param name="y">The component y-coordinate.</param>
     /// <param name="width">The component width.</param>
     /// <param name="height">The component height.</param>
     /// <param name="expression">The expression.</param>
     /// <param name="level">The level.</param>
-    protected ExpressionEditor(
-        ICustomMenu? parent,
-        int x,
-        int y,
-        int width,
-        int height,
-        IExpression expression,
-        int level)
-        : base(parent, x, y, width, height, level.ToString(CultureInfo.InvariantCulture))
+    protected ExpressionEditor(int x, int y, int width, int height, IExpression expression, int level)
+        : base(x, y, width, height, level.ToString(CultureInfo.InvariantCulture))
     {
         this.Expression = expression;
         this.Level = level;
@@ -42,12 +35,13 @@ internal abstract class ExpressionEditor : BaseComponent
             level >= 0 ? ExpressionEditor.Colors[this.Level % ExpressionEditor.Colors.Length] : Color.Black;
 
         this.warningIcon = new TextureComponent(
-            this.Parent,
             "warning",
             new Rectangle(x - 2, y - 7, 5, 14),
             Game1.mouseCursors,
             new Rectangle(403, 496, 5, 14),
-            2f).SetHoverText(I18n.Ui_Invalid_Tooltip());
+            2f);
+
+        this.warningIcon.HoverText = I18n.Ui_Invalid_Tooltip();
     }
 
     /// <summary>Event raised when the expression is changed.</summary>
@@ -63,24 +57,29 @@ internal abstract class ExpressionEditor : BaseComponent
     protected int Level { get; }
 
     /// <inheritdoc />
-    public override void Draw(SpriteBatch spriteBatch, Point cursor, Point offset)
+    public override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
         UiToolkit.DrawInFrame(
             spriteBatch,
-            new Rectangle(this.bounds.X + offset.X, this.bounds.Y + offset.Y, this.bounds.Width, this.bounds.Height),
-            sb => this.DrawInFrame(sb, cursor, offset));
+            new Rectangle(
+                this.bounds.X + this.Offset.X,
+                this.bounds.Y + this.Offset.Y,
+                this.bounds.Width,
+                this.bounds.Height),
+            sb => this.DrawInFrame(sb, cursor));
 
         if (this.Expression.IsValid)
         {
             return;
         }
 
-        this.warningIcon.Update(cursor - offset);
-        this.warningIcon.Draw(spriteBatch, cursor, offset);
+        this.warningIcon.Offset = this.Offset;
+        this.warningIcon.Update(cursor - this.Offset);
+        this.warningIcon.Draw(spriteBatch, cursor);
 
-        if (this.warningIcon.Bounds.Contains(cursor - offset))
+        if (this.warningIcon.Bounds.Contains(cursor - this.Offset))
         {
-            this.SetHoverText(this.warningIcon.HoverText);
+            this.HoverText = this.warningIcon.HoverText;
         }
     }
 }

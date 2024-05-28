@@ -12,6 +12,7 @@ using StardewMods.BetterChests.Framework.Services.Factory;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Interfaces;
 using StardewMods.Common.Models;
+using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.BellsAndWhistles;
@@ -241,13 +242,8 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
         var x = Math.Max(IClickableMenu.borderWidth / 2, (Game1.uiViewport.Width / 2) - (Game1.tileSize * 10));
         var y = IClickableMenu.borderWidth / 2;
 
-        this.LeftArrow.bounds.X = x;
-        this.LeftArrow.bounds.Y = y + Game1.tileSize + 20;
-        this.LeftArrow.bounds.Y = y + 10;
-
-        this.RightArrow.bounds.X = x + (Game1.tileSize * 2);
-        this.RightArrow.bounds.Y = y + Game1.tileSize + 20;
-        this.RightArrow.bounds.Y = y + 10;
+        this.LeftArrow.bounds.Location = new Point(x, y + 10);
+        this.RightArrow.bounds.Location = new Point(x + (Game1.tileSize * 2), y + 10);
 
         var (width, height) = Game1.smallFont.MeasureString(name);
         this.currentContainer.Value = new ClickableComponent(
@@ -307,7 +303,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
             return;
         }
 
-        var cursor = this.inputHelper.GetCursorPosition().GetScaledScreenPixels();
+        var cursor = UiToolkit.Cursor;
 
         // Draw current container index
         if (this.menuHandler.Top.Container is not null && this.Config.AccessChestsShowArrows)

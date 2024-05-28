@@ -163,7 +163,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
                 Game1.activeClickableMenu = new ConfigMenu();
                 return;
             case "icons":
-                Game1.activeClickableMenu = new IconPicker(this.iconRegistry);
+                Game1.activeClickableMenu = new IconPopup(this.iconRegistry);
                 return;
             case "layout":
                 Game1.activeClickableMenu = new LayoutMenu();

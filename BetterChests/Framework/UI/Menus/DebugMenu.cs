@@ -51,7 +51,7 @@ internal sealed class DebugMenu : BaseMenu
     }
 
     /// <inheritdoc />
-    public override void Draw(SpriteBatch spriteBatch, Point cursor)
+    protected override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
         var hoverText = string.Empty;
         for (var i = 0; i < this.items.Count; i++)
@@ -75,7 +75,7 @@ internal sealed class DebugMenu : BaseMenu
     }
 
     /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
+    protected override bool TryLeftClick(Point cursor)
     {
         for (var i = 0; i < this.items.Count; i++)
         {

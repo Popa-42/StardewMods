@@ -3,7 +3,6 @@ namespace StardewMods.FauxCore.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
 
 #else
@@ -11,7 +10,6 @@ namespace StardewMods.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
 #endif
 
@@ -27,7 +25,6 @@ internal sealed class TextField : BaseComponent
     private int timeout;
 
     /// <summary>Initializes a new instance of the <see cref="TextField" /> class.</summary>
-    /// <param name="parent">The parent menu.</param>
     /// <param name="x">The text field x-coordinate.</param>
     /// <param name="y">The text field y-coordinate.</param>
     /// <param name="width">The text field width.</param>
@@ -35,14 +32,13 @@ internal sealed class TextField : BaseComponent
     /// <param name="setMethod">An action that sets the current value.</param>
     /// <param name="name">The text field name.</param>
     public TextField(
-        ICustomMenu? parent,
         int x,
         int y,
         int width,
         Func<string> getMethod,
         Action<string> setMethod,
         string name = "TextField")
-        : base(parent, x, y, width, 48, name)
+        : base(x, y, width, 48, name)
     {
         this.previousText = getMethod();
         this.getMethod = getMethod;
@@ -72,10 +68,10 @@ internal sealed class TextField : BaseComponent
     }
 
     /// <inheritdoc />
-    public override void Draw(SpriteBatch spriteBatch, Point cursor, Point offset)
+    public override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
-        this.textBox.X = this.bounds.X + offset.X;
-        this.textBox.Y = this.bounds.Y + offset.Y;
+        this.textBox.X = this.bounds.X + this.Offset.X;
+        this.textBox.Y = this.bounds.Y + this.Offset.Y;
         this.textBox.Draw(spriteBatch, false);
     }
 

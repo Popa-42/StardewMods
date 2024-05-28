@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI.Events;
 using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Models.Events;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Interfaces;
 using StardewMods.Common.Models;
 using StardewMods.Common.Services.Integrations.BetterChests;
@@ -73,7 +74,7 @@ internal sealed class MenuManager
     public IStorageContainer? Container { get; set; }
 
     /// <summary>Gets the inventory icon.</summary>
-    public ClickableComponent? Icon { get; private set; }
+    public ClickableTextureComponent? Icon { get; private set; }
 
     /// <summary>Gets or sets the method used to highlight an item in the inventory menu.</summary>
     public InventoryMenu.highlightThisItem? OriginalHighlightMethod { get; set; }
@@ -108,7 +109,7 @@ internal sealed class MenuManager
         }
 
         // Draw storage icon
-        if (this.Icon is not ClickableTextureComponent clickableTextureComponent)
+        if (this.Icon is null)
         {
             return;
         }
@@ -136,11 +137,11 @@ internal sealed class MenuManager
             1f);
 
         spriteBatch.Draw(
-            clickableTextureComponent.texture,
+            this.Icon.texture,
             new Vector2(
-                this.Icon.bounds.Center.X - (clickableTextureComponent.sourceRect.Width * Game1.pixelZoom / 2f) + 8,
-                this.Icon.bounds.Center.Y - (clickableTextureComponent.sourceRect.Height * Game1.pixelZoom / 2f)),
-            clickableTextureComponent.sourceRect,
+                this.Icon.bounds.Center.X - (this.Icon.sourceRect.Width * Game1.pixelZoom / 2f) + 8,
+                this.Icon.bounds.Center.Y - (this.Icon.sourceRect.Height * Game1.pixelZoom / 2f)),
+            this.Icon.sourceRect,
             Color.White,
             0f,
             Vector2.Zero,
@@ -182,16 +183,18 @@ internal sealed class MenuManager
         // Add arrows
         parent.allClickableComponents?.Add(this.UpArrow);
         parent.allClickableComponents?.Add(this.DownArrow);
-
         if (this.InventoryMenu is not null)
         {
             // Reposition arrows
             var topSlot = this.Columns - 1;
             var bottomSlot = this.Capacity - 1;
-            this.UpArrow.bounds.X = this.InventoryMenu.xPositionOnScreen + this.InventoryMenu.width + 8;
-            this.UpArrow.bounds.Y = this.InventoryMenu.inventory[topSlot].bounds.Center.Y - (6 * Game1.pixelZoom);
-            this.DownArrow.bounds.X = this.InventoryMenu.xPositionOnScreen + this.InventoryMenu.width + 8;
-            this.DownArrow.bounds.Y = this.InventoryMenu.inventory[bottomSlot].bounds.Center.Y - (6 * Game1.pixelZoom);
+            this.UpArrow.bounds.Location = new Point(
+                this.InventoryMenu.xPositionOnScreen + this.InventoryMenu.width + 8,
+                this.InventoryMenu.inventory[topSlot].bounds.Center.Y - (6 * Game1.pixelZoom));
+
+            this.DownArrow.bounds.Location = new Point(
+                this.InventoryMenu.xPositionOnScreen + this.InventoryMenu.width + 8,
+                this.InventoryMenu.inventory[bottomSlot].bounds.Center.Y - (6 * Game1.pixelZoom));
 
             // Assign Neighbor Ids
             this.UpArrow.leftNeighborID = this.InventoryMenu.inventory[topSlot].myID;
@@ -233,12 +236,24 @@ internal sealed class MenuManager
         if (string.IsNullOrWhiteSpace(this.Container?.StorageIcon)
             || !this.iconRegistry.TryGetIcon(this.Container.StorageIcon, out var storageIcon))
         {
-            this.Icon = new ClickableComponent(new Rectangle(x, y, Game1.tileSize, Game1.tileSize + 12), "icon");
+            this.Icon = this
+                .iconRegistry.Icon(VanillaIcon.Chest)
+                .Component(IconStyle.Transparent, "icon")
+                .AsBuilder()
+                .Location(new Point(x, y))
+                .Size(new Point(Game1.tileSize, Game1.tileSize + 12))
+                .Value;
+
             return;
         }
 
-        this.Icon = storageIcon.Component(IconStyle.Transparent, x, y);
-        this.Icon.bounds.Size = new Point(Game1.tileSize, Game1.tileSize + 12);
+        this.Icon = storageIcon
+            .Component(IconStyle.Transparent, "icon")
+            .AsBuilder()
+            .Location(new Point(x, y))
+            .Size(new Point(Game1.tileSize, Game1.tileSize + 12))
+            .Value;
+
         parent.allClickableComponents?.Add(this.Icon);
     }
 

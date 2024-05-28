@@ -1,6 +1,5 @@
 namespace StardewMods.BetterChests.Framework.Services.Features;
 
-using Microsoft.Xna.Framework;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Interfaces;
@@ -199,7 +198,6 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
             - (top.Rows == 3 ? 25 : 4);
 
         this.searchBar.Value = new TextField(
-            null,
             x,
             y,
             width,
@@ -262,7 +260,7 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
         }
 
         var cursor = this.inputHelper.GetCursorPosition().GetScaledScreenPixels().ToPoint();
-        this.searchBar.Value.Draw(e.SpriteBatch, cursor, Point.Zero);
+        this.searchBar.Value.Draw(e.SpriteBatch, cursor);
     }
 
     private void OnRenderingActiveMenu(RenderingActiveMenuEventArgs e)

@@ -16,7 +16,7 @@ using StardewMods.Common.UI.Menus;
 using StardewValley.Menus;
 
 /// <summary>A sub-menu for editing an <see cref="IExpression" />.</summary>
-internal sealed class ExpressionsMenu : FramedMenu
+internal sealed class ExpressionsMenu : BaseMenu
 {
     private readonly IExpressionHandler expressionHandler;
     private readonly Func<string> getSearchText;
@@ -51,21 +51,11 @@ internal sealed class ExpressionsMenu : FramedMenu
         this.setSearchText = setSearchText;
     }
 
-    /// <inheritdoc />
-    public override Rectangle Frame =>
-        new(this.xPositionOnScreen - 4, this.yPositionOnScreen - 8, this.width + 8, this.height + 20);
-
-    /// <inheritdoc />
-    public override int StepSize => 40;
-
     private string SearchText
     {
         get => this.getSearchText();
         set => this.setSearchText(value);
     }
-
-    /// <inheritdoc />
-    public override void DrawUnder(SpriteBatch b, Point cursor) { }
 
     /// <summary>Re-initializes the components of the object with the given initialization expression.</summary>
     /// <param name="initExpression">The initial expression, or null to clear.</param>
@@ -79,7 +69,6 @@ internal sealed class ExpressionsMenu : FramedMenu
 
         this.baseComponent = new ExpressionGroup(
             this.iconRegistry,
-            this,
             this.Bounds.X,
             this.Bounds.Y,
             this.Bounds.Width,
@@ -89,9 +78,12 @@ internal sealed class ExpressionsMenu : FramedMenu
         this.baseComponent.ExpressionChanged += this.OnExpressionChanged;
         this.allClickableComponents.Add(this.baseComponent);
 
-        this.SetMaxOffset(
-            new Point(-1, Math.Max(0, this.baseComponent.bounds.Bottom - this.Bounds.Height - this.Bounds.Y)));
+        // this.SetMaxOffset(
+        //     new Point(-1, Math.Max(0, this.baseComponent.bounds.Bottom - this.Bounds.Height - this.Bounds.Y)));
     }
+
+    /// <inheritdoc />
+    protected override void DrawUnder(SpriteBatch b, Point cursor) { }
 
     private void Add(IExpression toAddTo, ExpressionType expressionType)
     {
@@ -204,13 +196,14 @@ internal sealed class ExpressionsMenu : FramedMenu
 
     private void ShowDropdown(IExpression expression, ClickableComponent component)
     {
-        var dropdown = new Dropdown<ItemAttribute>(
+        var dropdown = new OptionDropdown<ItemAttribute>(
             component,
             ItemAttributeExtensions.GetValues().AsEnumerable(),
-            static attribute => Localized.Attribute(attribute.ToStringFast()));
+            getLabel: static attribute => Localized.Attribute(attribute.ToStringFast()));
 
         dropdown.OptionSelected += (_, attribute) => this.ChangeAttribute(expression, attribute.ToStringFast());
-        this.Parent?.SetChildMenu(dropdown);
+
+        //this.Parent?.SetChildMenu(dropdown);
     }
 
     private void ShowPopup(IExpression expression, ClickableComponent component)
@@ -234,13 +227,13 @@ internal sealed class ExpressionsMenu : FramedMenu
             _ => throw new ArgumentOutOfRangeException(nameof(expression)),
         };
 
-        var popupSelect = new PopupSelect<string>(this.iconRegistry, popupItems, component.label, maxItems: 10);
+        var popupSelect = new OptionPopup<string>(this.iconRegistry, component.label, popupItems, 10);
         popupSelect.OptionSelected += (_, _) =>
         {
             this.ChangeTerm(expression, popupSelect.CurrentText);
         };
 
-        this.Parent?.SetChildMenu(popupSelect);
+        //this.Parent?.SetChildMenu(popupSelect);
     }
 
     private void ToggleGroup(IExpression toToggle)

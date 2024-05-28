@@ -36,8 +36,9 @@ internal sealed class ModEntry : Mod
         container.RegisterSingleton<IExpressionHandler, FauxCoreIntegration>();
         container.RegisterSingleton<IIconRegistry, FauxCoreIntegration>();
         container.RegisterSingleton<GenericModConfigMenuIntegration>();
-        container.RegisterSingleton<MenuHandler>();
         container.RegisterSingleton<Localized>();
+        container.RegisterSingleton<MenuHandler>();
+        container.RegisterSingleton<MenuFactory>();
         container.RegisterSingleton<IPatchManager, FauxCoreIntegration>();
         container.RegisterSingleton<ProxyChestFactory>();
         container.RegisterSingleton<ISimpleLogging, FauxCoreIntegration>();

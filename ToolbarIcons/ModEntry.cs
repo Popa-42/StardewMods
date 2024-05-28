@@ -35,6 +35,7 @@ internal sealed class ModEntry : Mod
         container.RegisterSingleton<ISimpleLogging, FauxCoreIntegration>();
         container.RegisterSingleton<IThemeHelper, FauxCoreIntegration>();
         container.RegisterSingleton<ToolbarManager>();
+        container.RegisterSingleton<UiToolkit>();
         container.RegisterInstance(new Dictionary<string, string?>());
         container.Collection.Register<ICustomIntegration>(
             typeof(AlwaysScrollMap),

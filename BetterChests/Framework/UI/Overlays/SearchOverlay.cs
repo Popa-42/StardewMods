@@ -19,7 +19,7 @@ internal sealed class SearchOverlay : BaseMenu
         var origin = Utility.getTopLeftPositionForCenteringOnScreen(searchBarWidth, 48);
 
         this.textField =
-            new TextField(this, (int)origin.X, Game1.tileSize, searchBarWidth, getMethod, setMethod)
+            new TextField((int)origin.X, Game1.tileSize, searchBarWidth, getMethod, setMethod)
             {
                 Selected = true,
             };
@@ -37,7 +37,7 @@ internal sealed class SearchOverlay : BaseMenu
     }
 
     /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
+    protected override bool TryLeftClick(Point cursor)
     {
         this.textField.TryLeftClick(cursor);
         if (this.textField.Selected)
@@ -51,7 +51,7 @@ internal sealed class SearchOverlay : BaseMenu
     }
 
     /// <inheritdoc />
-    public override bool TryRightClick(Point cursor)
+    protected override bool TryRightClick(Point cursor)
     {
         this.textField.TryRightClick(cursor);
         if (this.textField.Selected)

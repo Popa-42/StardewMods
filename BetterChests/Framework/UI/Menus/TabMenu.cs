@@ -6,6 +6,8 @@ using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Models;
 using StardewMods.BetterChests.Framework.Services;
 using StardewMods.BetterChests.Framework.UI.Components;
+using StardewMods.Common.Helpers;
+using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
 
@@ -38,60 +40,77 @@ internal sealed class TabMenu : SearchMenu
 
         this.saveButton = iconRegistry
             .Icon(InternalIcon.Save)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + Game1.tileSize + 16,
-                hoverText: I18n.Ui_Save_Name());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(new Point(this.xPositionOnScreen + this.width + 4, this.yPositionOnScreen + Game1.tileSize + 16))
+            .HoverText(I18n.Ui_Save_Name())
+            .Value;
 
         this.copyButton = iconRegistry
             .Icon(InternalIcon.Copy)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 2),
-                hoverText: I18n.Ui_Copy_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 2)))
+            .HoverText(I18n.Ui_Copy_Tooltip())
+            .Value;
 
         this.pasteButton = iconRegistry
             .Icon(InternalIcon.Paste)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 3),
-                hoverText: I18n.Ui_Paste_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 3)))
+            .HoverText(I18n.Ui_Paste_Tooltip())
+            .Value;
 
         this.editButton = iconRegistry
             .Icon(VanillaIcon.ColorPicker)
-            .Component(
-                IconStyle.Transparent,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 4),
-                hoverText: I18n.Ui_Edit_Tooltip());
+            .Component(IconStyle.Transparent)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 4)))
+            .HoverText(I18n.Ui_Edit_Tooltip())
+            .Value;
 
         this.addButton = iconRegistry
             .Icon(VanillaIcon.Plus)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 5),
-                hoverText: I18n.Ui_Add_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 5)))
+            .HoverText(I18n.Ui_Add_Tooltip())
+            .Value;
 
         this.removeButton = iconRegistry
             .Icon(VanillaIcon.Trash)
-            .Component(
-                IconStyle.Button,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + ((Game1.tileSize + 16) * 6),
-                hoverText: I18n.Ui_Remove_Tooltip());
+            .Component(IconStyle.Button)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 6)))
+            .HoverText(I18n.Ui_Remove_Tooltip())
+            .Value;
 
         this.okButton = iconRegistry
             .Icon(VanillaIcon.Ok)
-            .Component(
-                IconStyle.Transparent,
-                this.xPositionOnScreen + this.width + 4,
-                this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2));
+            .Component(IconStyle.Transparent)
+            .AsBuilder()
+            .Location(
+                new Point(
+                    this.xPositionOnScreen + this.width + 4,
+                    this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2)))
+            .Value;
 
-        this.allClickableComponents.Add(this.saveButton);
         this.allClickableComponents.Add(this.copyButton);
         this.allClickableComponents.Add(this.pasteButton);
         this.allClickableComponents.Add(this.editButton);
@@ -113,7 +132,6 @@ internal sealed class TabMenu : SearchMenu
             var icon = this.iconRegistry.Icon(tabData.Icon);
             var tabIcon = new TabEditor(
                 this.iconRegistry,
-                this,
                 this.xPositionOnScreen - (Game1.tileSize * 2) - 256,
                 this.yPositionOnScreen + (Game1.tileSize * (i + 1)) + 16,
                 (Game1.tileSize * 2) + 256,
@@ -141,7 +159,10 @@ internal sealed class TabMenu : SearchMenu
     }
 
     /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
+    protected override bool HighlightMethod(Item item) => true;
+
+    /// <inheritdoc />
+    protected override bool TryLeftClick(Point cursor)
     {
         if (this.saveButton.bounds.Contains(cursor) && this.readyToClose())
         {
@@ -182,7 +203,6 @@ internal sealed class TabMenu : SearchMenu
             var icon = this.iconRegistry.Icon(VanillaIcon.Plus);
             var tabIcon = new TabEditor(
                 this.iconRegistry,
-                this,
                 this.xPositionOnScreen - (Game1.tileSize * 2) - 256,
                 this.yPositionOnScreen + (Game1.tileSize * (this.config.InventoryTabList.Count + 1)) + 16,
                 (Game1.tileSize * 2) + 256,
@@ -219,8 +239,8 @@ internal sealed class TabMenu : SearchMenu
                     var currentY = current.bounds.Y;
                     var nextY = next.bounds.Y;
 
-                    current.MoveTo(new Point(current.bounds.X, nextY));
-                    next.MoveTo(new Point(next.bounds.X, currentY));
+                    current.Location = new Point(current.bounds.X, nextY);
+                    next.Location = new Point(next.bounds.X, currentY);
 
                     (this.allClickableComponents[index], this.allClickableComponents[index + 1]) = (
                         this.allClickableComponents[index + 1], this.allClickableComponents[index]);
@@ -243,10 +263,7 @@ internal sealed class TabMenu : SearchMenu
         return false;
     }
 
-    /// <inheritdoc />
-    protected override bool HighlightMethod(Item item) => true;
-
-    private void OnClicked(object? sender, IClicked e)
+    private void OnClicked(object? sender, UiEventArgs e)
     {
         if (sender is not TabEditor tabEditor)
         {
@@ -267,7 +284,7 @@ internal sealed class TabMenu : SearchMenu
         }
     }
 
-    private void OnMoveDown(object? sender, IClicked e)
+    private void OnMoveDown(object? sender, UiEventArgs e)
     {
         if (sender is not TabEditor tabEditor || tabEditor.Index >= this.config.InventoryTabList.Count - 1)
         {
@@ -287,14 +304,14 @@ internal sealed class TabMenu : SearchMenu
         var currentY = current.bounds.Y;
         var nextY = next.bounds.Y;
 
-        current.MoveTo(new Point(current.bounds.X, nextY));
-        next.MoveTo(new Point(next.bounds.X, currentY));
+        current.Location = new Point(current.bounds.X, nextY);
+        next.Location = new Point(next.bounds.X, currentY);
 
         (this.allClickableComponents[index], this.allClickableComponents[index + 1]) = (
             this.allClickableComponents[index + 1], this.allClickableComponents[index]);
     }
 
-    private void OnMoveUp(object? sender, IClicked e)
+    private void OnMoveUp(object? sender, UiEventArgs e)
     {
         if (sender is not TabEditor
             {
@@ -316,8 +333,8 @@ internal sealed class TabMenu : SearchMenu
         var currentY = current.bounds.Y;
         var previousY = previous.bounds.Y;
 
-        current.MoveTo(new Point(current.bounds.X, previousY));
-        previous.MoveTo(new Point(previous.bounds.X, currentY));
+        current.Location = new Point(current.bounds.X, previousY);
+        previous.Location = new Point(previous.bounds.X, currentY);
 
         (this.allClickableComponents[index], this.allClickableComponents[index - 1]) = (
             this.allClickableComponents[index - 1], this.allClickableComponents[index]);

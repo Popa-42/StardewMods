@@ -5,6 +5,7 @@ using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.UI.Components;
 using StardewMods.Common.Interfaces;
+using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
@@ -48,7 +49,7 @@ internal sealed class InventoryTabs : BaseFeature<InventoryTabs>
     protected override void Deactivate() =>
         this.Events.Unsubscribe<InventoryMenuChangedEventArgs>(this.OnInventoryMenuChanged);
 
-    private void OnClicked(object? sender, IClicked e)
+    private void OnClicked(object? sender, UiEventArgs e)
     {
         if (sender is not InventoryTab tab)
         {
@@ -93,7 +94,7 @@ internal sealed class InventoryTabs : BaseFeature<InventoryTabs>
                 continue;
             }
 
-            var tabIcon = new InventoryTab(null, x, y, icon, tabData);
+            var tabIcon = new InventoryTab(x, y, icon, tabData);
             tabIcon.Clicked += this.OnClicked;
             e.AddComponent(tabIcon);
 

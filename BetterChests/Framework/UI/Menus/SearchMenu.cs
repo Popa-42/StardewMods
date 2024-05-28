@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewMods.Common.Helpers;
-using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
 using StardewMods.Common.UI.Menus;
@@ -60,8 +59,6 @@ internal class SearchMenu : BaseMenu
             388,
             448);
 
-        this.AddSubMenu(this.expressionEditor);
-
         this.inventory = new InventoryMenu(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2) + 428,
             this.yPositionOnScreen
@@ -76,27 +73,14 @@ internal class SearchMenu : BaseMenu
             7);
 
         this.scrollInventory = new VerticalScrollBar(
-            this,
+            iconRegistry,
             this.inventory.xPositionOnScreen + this.inventory.width + 4,
             this.inventory.yPositionOnScreen + 4,
-            this.inventory.height,
-            () => this.rowOffset,
-            value =>
-            {
-                this.rowOffset = value;
-                this.inventory.actualInventory = this
-                    .allItems.Skip(this.rowOffset * (this.inventory.capacity / this.inventory.rows))
-                    .Take(this.inventory.capacity)
-                    .ToList();
-            },
-            () => 0,
-            () => Math.Max(0, this.totalRows - this.inventory.rows - 1));
+            this.inventory.height);
 
-        this.AddSubMenu(this.inventory);
         this.SetSearchText(searchText, true);
 
         this.textField = new TextField(
-            this,
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2),
             this.yPositionOnScreen
             + IClickableMenu.spaceToClearSideBorder
@@ -120,7 +104,21 @@ internal class SearchMenu : BaseMenu
     protected IExpression? Expression { get; private set; }
 
     /// <inheritdoc />
-    public override void DrawOver(SpriteBatch spriteBatch, Point cursor)
+    public override void receiveKeyPress(Keys key)
+    {
+        if (key is Keys.Escape && this.readyToClose())
+        {
+            this.exitThisMenuNoSound();
+        }
+
+        if (key is Keys.Tab && this.textField.Selected)
+        {
+            // Auto-complete on tab
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void DrawOver(SpriteBatch spriteBatch, Point cursor)
     {
         var item = this.inventory.hover(cursor.X, cursor.Y, null);
         if (item is not null)
@@ -136,7 +134,7 @@ internal class SearchMenu : BaseMenu
     }
 
     /// <inheritdoc />
-    public override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
+    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
     {
         base.DrawUnder(spriteBatch, cursor);
 
@@ -148,27 +146,6 @@ internal class SearchMenu : BaseMenu
             spriteBatch,
             this.xPositionOnScreen + (IClickableMenu.borderWidth / 2) + 400,
             this.yPositionOnScreen + (IClickableMenu.borderWidth / 2) + Game1.tileSize + 40);
-    }
-
-    /// <inheritdoc />
-    public override void receiveKeyPress(Keys key)
-    {
-        if (key is Keys.Escape && this.readyToClose())
-        {
-            this.exitThisMenuNoSound();
-        }
-
-        if (key is Keys.Tab && this.textField.Selected)
-        {
-            // Auto-complete on tab
-        }
-    }
-
-    /// <inheritdoc />
-    public override bool TryScroll(int direction)
-    {
-        var (x, y) = UiToolkit.Cursor;
-        return this.inventory.isWithinBounds(x, y) && this.scrollInventory.TryScroll(direction);
     }
 
     /// <summary>Get the items that should be displayed in the menu.</summary>
@@ -218,4 +195,8 @@ internal class SearchMenu : BaseMenu
         this.textField?.Reset();
         this.RefreshItems();
     }
+
+    /// <inheritdoc />
+    protected override bool TryScroll(Point cursor, int direction) =>
+        this.inventory.isWithinBounds(cursor.X, cursor.Y) && this.scrollInventory.TryScroll(cursor, direction);
 }

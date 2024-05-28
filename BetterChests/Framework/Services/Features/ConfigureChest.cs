@@ -91,7 +91,7 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
 
     private static void OnItemHighlighting(ItemHighlightingEventArgs e)
     {
-        if (Game1.activeClickableMenu?.GetChildMenu() is Dropdown<KeyValuePair<string, string>>)
+        if (Game1.activeClickableMenu?.GetChildMenu() is OptionDropdown<KeyValuePair<string, string>>)
         {
             e.UnHighlight();
         }
@@ -128,7 +128,7 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
 
         var cursor = e.Cursor.GetScaledScreenPixels();
         IStorageContainer? container = null;
-        ClickableComponent? icon = null;
+        ClickableTextureComponent? icon = null;
         if (this.menuHandler.Top.Container?.ConfigureChest is FeatureOption.Enabled
             && this.menuHandler.Top.Icon?.bounds.Contains(cursor) == true)
         {

@@ -7,6 +7,7 @@ using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
+using StardewMods.Common.UI;
 using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
 
@@ -28,32 +29,30 @@ internal sealed class ExpressionGroup : ExpressionEditor
     /// <param name="width">The component width.</param>
     /// <param name="expression">The expression.</param>
     /// <param name="level">The level.</param>
-    public ExpressionGroup(
-        IIconRegistry iconRegistry,
-        ICustomMenu? parent,
-        int x,
-        int y,
-        int width,
-        IExpression expression,
-        int level)
-        : base(parent, x, y, width, level >= 0 ? 52 : 0, expression, level)
+    public ExpressionGroup(IIconRegistry iconRegistry, int x, int y, int width, IExpression expression, int level)
+        : base(x, y, width, level >= 0 ? 52 : 0, expression, level)
     {
         this.iconRegistry = iconRegistry;
         var indent = this.Level >= 0 ? 12 : 0;
 
         this.removeButton = iconRegistry
             .Icon(VanillaIcon.DoNot)
-            .Component(IconStyle.Transparent, x + width - 36, y + 12, 2f, "remove", I18n.Ui_Remove_Tooltip());
+            .Component(IconStyle.Transparent, "remove", 2f)
+            .AsBuilder()
+            .Location(new Point(x + width - 36, y + 12))
+            .HoverText(I18n.Ui_Remove_Tooltip())
+            .Value;
 
         var toggleButton = new ButtonComponent(
-            this.Parent,
             x + 8,
             y + 8,
             0,
             32,
             "toggle",
-            Localized.ExpressionName(expression.ExpressionType)).SetHoverText(
-            Localized.ExpressionTooltip(expression.ExpressionType));
+            Localized.ExpressionName(expression.ExpressionType))
+        {
+            HoverText = Localized.ExpressionTooltip(expression.ExpressionType),
+        };
 
         if (this.Level >= 0)
         {
@@ -83,7 +82,6 @@ internal sealed class ExpressionGroup : ExpressionEditor
 
                 this.AddSubExpression(innerExpression);
                 this.mainComponent = new ButtonComponent(
-                    this.Parent,
                     this.bounds.X,
                     this.bounds.Y,
                     this.bounds.Width,
@@ -96,13 +94,15 @@ internal sealed class ExpressionGroup : ExpressionEditor
 
         var subWidth = (int)Game1.smallFont.MeasureString(I18n.Ui_AddTerm_Name()).X + 20;
         var addTerm = new ButtonComponent(
-            this.Parent,
             this.bounds.X + indent,
             this.bounds.Bottom,
             subWidth,
             32,
             "addTerm",
-            I18n.Ui_AddTerm_Name()).SetHoverText(I18n.Ui_AddTerm_Tooltip());
+            I18n.Ui_AddTerm_Name())
+        {
+            HoverText = I18n.Ui_AddTerm_Tooltip(),
+        };
 
         addTerm.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
@@ -112,13 +112,15 @@ internal sealed class ExpressionGroup : ExpressionEditor
 
         subWidth = (int)Game1.smallFont.MeasureString(I18n.Ui_AddGroup_Name()).X + 20;
         var addGroup = new ButtonComponent(
-            this.Parent,
             addTerm.Bounds.Right + 12,
             this.bounds.Bottom,
             subWidth,
             32,
             "addGroup",
-            I18n.Ui_AddGroup_Name()).SetHoverText(I18n.Ui_AddGroup_Tooltip());
+            I18n.Ui_AddGroup_Name())
+        {
+            HoverText = I18n.Ui_AddGroup_Tooltip(),
+        };
 
         addGroup.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
@@ -130,13 +132,15 @@ internal sealed class ExpressionGroup : ExpressionEditor
         {
             subWidth = (int)Game1.smallFont.MeasureString(I18n.Ui_AddNot_Name()).X + 20;
             var addNot = new ButtonComponent(
-                this.Parent,
                 addGroup.Bounds.Right + 12,
                 this.bounds.Bottom,
                 subWidth,
                 32,
                 "addNot",
-                I18n.Ui_AddNot_Name()).SetHoverText(I18n.Ui_AddNot_Tooltip());
+                I18n.Ui_AddNot_Name())
+            {
+                HoverText = I18n.Ui_AddNot_Tooltip(),
+            };
 
             addNot.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
                 this,
@@ -147,7 +151,6 @@ internal sealed class ExpressionGroup : ExpressionEditor
 
         this.bounds.Height = addTerm.Bounds.Bottom - this.bounds.Top + 12;
         this.mainComponent = new ButtonComponent(
-            this.Parent,
             this.bounds.X,
             this.bounds.Y,
             this.bounds.Width,
@@ -164,59 +167,6 @@ internal sealed class ExpressionGroup : ExpressionEditor
     }
 
     /// <inheritdoc />
-    public override void DrawInFrame(SpriteBatch spriteBatch, Point cursor, Point offset)
-    {
-        if (this.Level >= 0)
-        {
-            this.mainComponent.SetColor(
-                this.bounds.Contains(cursor - offset) ? this.BaseColor.Highlight() : this.BaseColor.Muted());
-
-            this.mainComponent.Draw(spriteBatch, cursor, offset);
-        }
-
-        foreach (var component in this.components)
-        {
-            switch (component)
-            {
-                case ExpressionEditor:
-                    component.Draw(spriteBatch, cursor, offset);
-
-                    if (component.Bounds.Contains(cursor - offset))
-                    {
-                        this.SetHoverText(component.HoverText);
-                    }
-
-                    break;
-                case ButtonComponent buttonComponent:
-                    component.SetColor(
-                        buttonComponent.bounds.Contains(cursor - offset) ? Color.Gray.Highlight() : Color.Gray.Muted());
-
-                    component.Draw(spriteBatch, cursor, offset);
-
-                    if (component.Bounds.Contains(cursor - offset))
-                    {
-                        this.SetHoverText(component.HoverText);
-                    }
-
-                    break;
-            }
-        }
-
-        if (this.Level < 0)
-        {
-            return;
-        }
-
-        this.removeButton?.tryHover(cursor.X - offset.X, cursor.Y - offset.Y);
-        this.removeButton?.draw(spriteBatch, Color.White, 1f, 0, offset.X, offset.Y);
-
-        if (this.removeButton?.bounds.Contains(cursor - offset) == true)
-        {
-            this.SetHoverText(this.removeButton.hoverText);
-        }
-    }
-
-    /// <inheritdoc />
     public override bool TryLeftClick(Point cursor)
     {
         if (this.components.Any(component => component.TryLeftClick(cursor)))
@@ -229,7 +179,7 @@ internal sealed class ExpressionGroup : ExpressionEditor
             return false;
         }
 
-        if (this.removeButton?.bounds.Contains(cursor) != true)
+        if (!this.removeButton.bounds.Contains(cursor))
         {
             return false;
         }
@@ -241,6 +191,61 @@ internal sealed class ExpressionGroup : ExpressionEditor
         return true;
     }
 
+    /// <inheritdoc />
+    protected override void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
+    {
+        if (this.Level >= 0)
+        {
+            this.mainComponent.Color = this.bounds.Contains(cursor - this.Offset)
+                ? this.BaseColor.Highlight()
+                : this.BaseColor.Muted();
+
+            this.mainComponent.Draw(spriteBatch, cursor);
+        }
+
+        foreach (var component in this.components)
+        {
+            switch (component)
+            {
+                case ExpressionEditor:
+                    component.Draw(spriteBatch, cursor);
+
+                    if (component.Bounds.Contains(cursor - this.Offset))
+                    {
+                        this.HoverText = component.HoverText;
+                    }
+
+                    break;
+                case ButtonComponent buttonComponent:
+                    component.Color = buttonComponent.bounds.Contains(cursor - this.Offset)
+                        ? Color.Gray.Highlight()
+                        : Color.Gray.Muted();
+
+                    component.Draw(spriteBatch, cursor);
+
+                    if (component.Bounds.Contains(cursor - this.Offset))
+                    {
+                        this.HoverText = component.HoverText;
+                    }
+
+                    break;
+            }
+        }
+
+        if (this.Level < 0)
+        {
+            return;
+        }
+
+        this.removeButton.tryHover(cursor.X - this.Offset.X, cursor.Y - this.Offset.Y);
+        this.removeButton.draw(spriteBatch, Color.White, 1f, 0, this.Offset.X, this.Offset.Y);
+
+        if (this.removeButton.bounds.Contains(cursor - this.Offset))
+        {
+            this.HoverText = this.removeButton.hoverText;
+        }
+    }
+
     private void AddSubExpression(IExpression expression)
     {
         var indent = this.Level >= 0 ? 12 : 0;
@@ -250,7 +255,6 @@ internal sealed class ExpressionGroup : ExpressionEditor
             case ExpressionType.All or ExpressionType.Any or ExpressionType.Not:
                 var expressionGroup = new ExpressionGroup(
                     this.iconRegistry,
-                    this.Parent,
                     this.bounds.X + indent,
                     this.bounds.Bottom,
                     this.bounds.Width - (indent * 2),
@@ -262,7 +266,6 @@ internal sealed class ExpressionGroup : ExpressionEditor
             default:
                 var expressionTerm = new ExpressionTerm(
                     this.iconRegistry,
-                    this.Parent,
                     this.bounds.X + indent,
                     this.bounds.Bottom,
                     this.bounds.Width - (indent * 2),

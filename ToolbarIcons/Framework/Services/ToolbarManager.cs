@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Interfaces;
 using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services;
@@ -274,9 +275,14 @@ internal sealed class ToolbarManager
                 continue;
             }
 
-            var component = icon.Component(IconStyle.Button, (int)origin.X, (int)origin.Y, 2f);
-            component.name = id;
-            component.hoverText = hoverText;
+            var component =
+                icon
+                    .Component(IconStyle.Button, id, 2f)
+                    .AsBuilder()
+                    .Location(origin.ToPoint())
+                    .HoverText(hoverText)
+                    .Value;
+
             this.Toolbar.allClickableComponents.Add(component);
             origin += delta;
         }

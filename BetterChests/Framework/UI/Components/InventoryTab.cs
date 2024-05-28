@@ -3,6 +3,7 @@ namespace StardewMods.BetterChests.Framework.UI.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewMods.BetterChests.Framework.Models;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
@@ -16,20 +17,20 @@ internal sealed class InventoryTab : BaseComponent
     private readonly int textWidth;
 
     /// <summary>Initializes a new instance of the <see cref="InventoryTab" /> class.</summary>
-    /// <param name="parent">The parent menu.</param>
     /// <param name="x">The x-coordinate of the tab component.</param>
     /// <param name="y">The y-coordinate of the tab component.</param>
     /// <param name="icon">The tab icon.</param>
     /// <param name="tabData">The inventory tab data.</param>
     /// <param name="overrideWidth">Indicates if the component should have a default width.</param>
-    public InventoryTab(ICustomMenu? parent, int x, int y, IIcon icon, TabData tabData, int overrideWidth = -1)
-        : base(parent, x, y, Game1.tileSize, Game1.tileSize, tabData.Label)
+    public InventoryTab(int x, int y, IIcon icon, TabData tabData, int overrideWidth = -1)
+        : base(x, y, Game1.tileSize, Game1.tileSize, tabData.Label)
     {
         var textBounds = Game1.smallFont.MeasureString(tabData.Label).ToPoint();
         this.Data = tabData;
         this.overrideWidth = overrideWidth;
         this.origin = new Vector2(x, y);
-        this.icon = icon.Component(IconStyle.Transparent, x - Game1.tileSize, y);
+        this.icon = icon.Component(IconStyle.Transparent).AsBuilder().Location(new Point(x - Game1.tileSize, y)).Value;
+
         this.textWidth = textBounds.X;
 
         if (overrideWidth == -1)
@@ -48,9 +49,9 @@ internal sealed class InventoryTab : BaseComponent
     public bool Active { get; set; } = true;
 
     /// <inheritdoc />
-    public override void Draw(SpriteBatch spriteBatch, Point cursor, Point offset)
+    public override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
-        cursor -= offset;
+        cursor -= this.Offset;
         var hover = this.bounds.Contains(cursor);
         var color = this.Active
             ? Color.White
@@ -62,8 +63,8 @@ internal sealed class InventoryTab : BaseComponent
         spriteBatch.Draw(
             Game1.mouseCursors,
             new Rectangle(
-                this.bounds.X + offset.X + 20,
-                this.bounds.Y + offset.Y,
+                this.bounds.X + this.Offset.X + 20,
+                this.bounds.Y + this.Offset.Y,
                 this.bounds.Width - 40,
                 this.bounds.Height),
             new Rectangle(21, 368, 6, 16),
@@ -77,8 +78,8 @@ internal sealed class InventoryTab : BaseComponent
         spriteBatch.Draw(
             Game1.mouseCursors,
             new Rectangle(
-                this.bounds.X + offset.X + 20,
-                this.bounds.Y + this.bounds.Height + offset.Y - 20,
+                this.bounds.X + this.Offset.X + 20,
+                this.bounds.Y + this.bounds.Height + this.Offset.Y - 20,
                 this.bounds.Width - 40,
                 20),
             new Rectangle(21, 368, 6, 5),
@@ -91,7 +92,7 @@ internal sealed class InventoryTab : BaseComponent
         // Top-Left
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.X + offset.X, this.bounds.Y + offset.Y),
+            new Vector2(this.bounds.X + this.Offset.X, this.bounds.Y + this.Offset.Y),
             new Rectangle(16, 368, 5, 15),
             color,
             0,
@@ -103,7 +104,7 @@ internal sealed class InventoryTab : BaseComponent
         // Bottom-Left
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.X + offset.X, this.bounds.Y + this.bounds.Height + offset.Y - 20),
+            new Vector2(this.bounds.X + this.Offset.X, this.bounds.Y + this.bounds.Height + this.Offset.Y - 20),
             new Rectangle(16, 368, 5, 5),
             color,
             0,
@@ -115,7 +116,7 @@ internal sealed class InventoryTab : BaseComponent
         // Top-Right
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.Right + offset.X - 20, this.bounds.Y + offset.Y),
+            new Vector2(this.bounds.Right + this.Offset.X - 20, this.bounds.Y + this.Offset.Y),
             new Rectangle(16, 368, 5, 15),
             color,
             0,
@@ -127,7 +128,9 @@ internal sealed class InventoryTab : BaseComponent
         // Bottom-Right
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.Right + offset.X - 20, this.bounds.Y + this.bounds.Height + offset.Y - 20),
+            new Vector2(
+                this.bounds.Right + this.Offset.X - 20,
+                this.bounds.Y + this.bounds.Height + this.Offset.Y - 20),
             new Rectangle(16, 368, 5, 5),
             color,
             0,
@@ -141,7 +144,7 @@ internal sealed class InventoryTab : BaseComponent
             this.icon.tryHover(cursor.X, cursor.Y);
         }
 
-        this.icon.draw(spriteBatch, color, 1f, 0, offset.X, offset.Y);
+        this.icon.draw(spriteBatch, color, 1f, 0, this.Offset.X, this.Offset.Y);
 
         if (this.bounds.Width != this.overrideWidth
             && this.bounds.Width != this.textWidth + Game1.tileSize + IClickableMenu.borderWidth)
@@ -153,8 +156,8 @@ internal sealed class InventoryTab : BaseComponent
             Game1.smallFont,
             this.name,
             new Vector2(
-                this.bounds.X + Game1.tileSize + offset.X,
-                this.bounds.Y + (IClickableMenu.borderWidth / 2f) + offset.Y),
+                this.bounds.X + Game1.tileSize + this.Offset.X,
+                this.bounds.Y + (IClickableMenu.borderWidth / 2f) + this.Offset.Y),
             this.Active ? Game1.textColor : Game1.unselectedOptionColor);
     }
 

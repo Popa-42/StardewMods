@@ -3,7 +3,6 @@ namespace StardewMods.FauxCore.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
 using StardewMods.FauxCore.Common.Helpers;
-using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 using StardewMods.FauxCore.Common.UI.Components;
 using StardewValley.Menus;
 
@@ -12,48 +11,39 @@ namespace StardewMods.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
 using StardewMods.Common.Helpers;
-using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
 #endif
 
-/// <summary>Dropdown menu with icon selector.</summary>
-internal sealed class IconDropdown : BaseMenu
+/// <summary>Dropdown menu with option selector.</summary>
+/// <typeparam name="TOption">The option type.</typeparam>
+internal sealed class OptionDropdown<TOption> : BaseMenu
 {
-    private EventHandler<IIcon?>? iconSelected;
+    private EventHandler<TOption?>? optionSelected;
 
-    /// <summary>Initializes a new instance of the <see cref="IconDropdown" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="OptionDropdown{TOption}" /> class.</summary>
     /// <param name="anchor">The component to anchor the dropdown to.</param>
-    /// <param name="icons">The icons to pick from.</param>
-    /// <param name="rows">This rows of icons to display.</param>
-    /// <param name="columns">The columns of icons to display.</param>
-    /// <param name="getHoverText">A function which returns the icon hover text.</param>
-    /// <param name="scale">The icon scale.</param>
-    /// <param name="spacing">The spacing between icons.</param>
-    public IconDropdown(
+    /// <param name="options">The options to pick from.</param>
+    /// <param name="minWidth">The minimum width.</param>
+    /// <param name="maxWidth">The maximum width.</param>
+    /// <param name="maxOptions">The maximum number of items to display.</param>
+    /// <param name="getLabel">A function which returns the label of an item.</param>
+    /// <param name="spacing">The spacing between options.</param>
+    public OptionDropdown(
         ClickableComponent anchor,
-        IEnumerable<IIcon> icons,
-        int rows,
-        int columns,
-        IconSelector.GetHoverTextMethod? getHoverText = null,
-        float scale = 3f,
-        int spacing = 8)
+        IEnumerable<TOption> options,
+        int minWidth = 0,
+        int maxWidth = int.MaxValue,
+        int maxOptions = int.MaxValue,
+        OptionSelector<TOption>.GetLabelMethod? getLabel = null,
+        int spacing = 16)
         : base(anchor.bounds.Left, anchor.bounds.Bottom)
     {
-        var iconSelector = new IconSelector(
-            icons,
-            rows,
-            columns,
-            getHoverText,
-            scale,
-            spacing,
-            this.Bounds.X,
-            this.Bounds.Y);
+        var optionSelector = new OptionSelector<TOption>(options, minWidth, maxWidth, maxOptions, getLabel, spacing);
+        optionSelector.SelectionChanged += (_, option) => this.optionSelected?.InvokeAll(this, option);
 
-        iconSelector.SelectionChanged += (_, icon) => this.iconSelected?.InvokeAll(this, icon);
-
-        this.AddComponent(iconSelector);
-        this.Size = new Point(iconSelector.Bounds.Width + spacing, iconSelector.Bounds.Height + spacing);
+        this.AddComponent(optionSelector);
+        this.Size = new Point(optionSelector.Bounds.Width + spacing, optionSelector.Bounds.Height + spacing);
 
         // Default position is bottom-right
         var anchorOffset = anchor is ICustomComponent customComponent ? customComponent.Offset : Point.Zero;
@@ -72,10 +62,10 @@ internal sealed class IconDropdown : BaseMenu
     }
 
     /// <summary>Event raised when the selection changes.</summary>
-    public event EventHandler<IIcon?> IconSelected
+    public event EventHandler<TOption?> OptionSelected
     {
-        add => this.iconSelected += value;
-        remove => this.iconSelected -= value;
+        add => this.optionSelected += value;
+        remove => this.optionSelected -= value;
     }
 
     /// <inheritdoc />

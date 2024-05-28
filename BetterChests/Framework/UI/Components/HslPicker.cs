@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Services;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Models;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
@@ -105,16 +106,13 @@ internal sealed class HslPicker
 
         this.copyComponent = iconRegistry
             .Icon(InternalIcon.Copy)
-            .Component(
-                IconStyle.Transparent,
-                this.xPosition + 30,
-                this.yPosition - 4,
-                3f,
-                "copy",
-                I18n.Ui_Copy_Tooltip());
-
-        this.copyComponent.bounds.Size = new Point(36, 36);
-        this.copyComponent.myID = (int)Math.Pow(this.yPosition + 2, 2) + this.xPosition + 34;
+            .Component(IconStyle.Transparent, "copy", 3f)
+            .AsBuilder()
+            .Location(new Point(this.xPosition + 30, this.yPosition - 4))
+            .Size(new Point(36, 36))
+            .HoverText(I18n.Ui_Copy_Tooltip())
+            .Id((int)Math.Pow(this.yPosition + 2, 2) + this.xPosition + 34)
+            .Value;
 
         this.defaultColorArea = new Rectangle(this.xPosition - 6, this.yPosition - 4, 36, 36);
         this.defaultColorComponent = new ClickableTextureComponent(

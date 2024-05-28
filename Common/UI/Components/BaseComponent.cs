@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
 using StardewMods.FauxCore.Common.Models.Events;
 using StardewMods.FauxCore.Common.Services;
-using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
+using StardewMods.FauxCore.Common.UI.Menus;
 using StardewValley.Menus;
 
 #else
@@ -17,125 +17,304 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services;
-using StardewMods.Common.Services.Integrations.FauxCore;
+using StardewMods.Common.UI.Menus;
 using StardewValley.Menus;
 #endif
 
 /// <summary>Base custom component.</summary>
 internal abstract class BaseComponent : ClickableComponent, ICustomComponent
 {
-    private EventHandler<IClicked>? clicked;
+    private readonly List<ICustomComponent> components = [];
+
+    private float baseScale;
+    private EventHandler<UiEventArgs>? clicked;
+    private EventHandler<CursorEventArgs>? cursorOut;
+    private EventHandler<CursorEventArgs>? cursorOver;
+    private bool isHovered;
+    private BaseMenu? menu;
+    private Point offset;
+    private Point overflow;
+    private EventHandler<RenderEventArgs>? rendering;
 
     /// <summary>Initializes a new instance of the <see cref="BaseComponent" /> class.</summary>
-    /// <param name="parent">The parent menu.</param>
     /// <param name="x">The component x-coordinate.</param>
     /// <param name="y">The component y-coordinate.</param>
     /// <param name="width">The component width.</param>
     /// <param name="height">The component height.</param>
     /// <param name="name">The component name.</param>
-    protected BaseComponent(ICustomMenu? parent, int x, int y, int width, int height, string name)
+    protected BaseComponent(int x, int y, int width, int height, string name)
         : base(new Rectangle(x, y, width, height), name)
     {
-        this.Parent = parent;
-        this.Color = Color.White;
+        // Do nothing
     }
 
     /// <inheritdoc />
-    public event EventHandler<IClicked>? Clicked
+    public event EventHandler<UiEventArgs> Clicked
     {
         add => this.clicked += value;
         remove => this.clicked -= value;
     }
 
     /// <inheritdoc />
+    public event EventHandler<CursorEventArgs>? CursorOut
+    {
+        add => this.cursorOut += value;
+        remove => this.cursorOut -= value;
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<CursorEventArgs>? CursorOver
+    {
+        add => this.cursorOver += value;
+        remove => this.cursorOver -= value;
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<RenderEventArgs>? Rendering
+    {
+        add => this.rendering += value;
+        remove => this.rendering -= value;
+    }
+
+    /// <inheritdoc />
     public Rectangle Bounds => this.bounds;
 
     /// <inheritdoc />
-    public Point Location => this.bounds.Location;
+    public IReadOnlyList<ICustomComponent> Components => this.components;
 
     /// <inheritdoc />
-    public ICustomMenu? Parent { get; }
+    public float BaseScale
+    {
+        get => this.baseScale;
+        set
+        {
+            this.baseScale = value;
+            this.Scale = value;
+        }
+    }
 
     /// <inheritdoc />
-    public Point Size => this.bounds.Size;
+    public Color Color { get; set; } = Color.White;
 
     /// <inheritdoc />
-    public Color Color { get; private set; }
+    public string? HoverText { get; set; }
 
     /// <inheritdoc />
-    public string? HoverText { get; private set; }
+    public int Id
+    {
+        get => this.myID;
+        set => this.myID = value;
+    }
 
     /// <inheritdoc />
-    public virtual void Draw(SpriteBatch spriteBatch, Point cursor, Point offset) =>
+    public bool IsVisible
+    {
+        get => this.visible;
+        set => this.visible = value;
+    }
+
+    /// <inheritdoc />
+    public string? Label
+    {
+        get => this.label;
+        set => this.label = value;
+    }
+
+    /// <inheritdoc />
+    public virtual Point Location
+    {
+        get => this.bounds.Location;
+        set => this.bounds.Location = value;
+    }
+
+    /// <inheritdoc />
+    public BaseMenu? Menu
+    {
+        get => this.Parent?.Menu ?? this.menu;
+        set => this.menu = value;
+    }
+
+    /// <inheritdoc />
+    public string Name
+    {
+        get => this.name;
+        set => this.name = value;
+    }
+
+    /// <inheritdoc />
+    public virtual Point Offset
+    {
+        get => this.offset + this.Parent?.Offset ?? Point.Zero;
+        set => this.offset = value;
+    }
+
+    /// <summary>Gets or sets the component overflow.</summary>
+    public virtual Point Overflow
+    {
+        get => this.overflow;
+        set
+        {
+            this.overflow = value;
+            this.offset = new Point(Math.Clamp(this.offset.X, 0, value.X), Math.Clamp(this.offset.Y, 0, value.Y));
+        }
+    }
+
+    /// <inheritdoc />
+    public ICustomComponent? Parent { get; set; }
+
+    /// <inheritdoc />
+    public float Scale { get; set; }
+
+    /// <inheritdoc />
+    public virtual Point Size
+    {
+        get => this.bounds.Size;
+        set => this.bounds.Size = value;
+    }
+
+    /// <inheritdoc />
+    public ICustomComponent AddComponent(ICustomComponent component)
+    {
+        this.components.Add(component);
+        component.Parent = this;
+        return this;
+    }
+
+    /// <inheritdoc />
+    public virtual void Draw(SpriteBatch spriteBatch, Point cursor)
+    {
+        if (!this.IsVisible)
+        {
+            return;
+        }
+
+        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch));
         UiToolkit.DrawInFrame(
             spriteBatch,
-            new Rectangle(this.bounds.X + offset.X, this.bounds.Y + offset.Y, this.bounds.Width, this.bounds.Height),
-            sb => this.DrawInFrame(sb, cursor, offset));
-
-    /// <summary>Draws the component in a framed area.</summary>
-    /// <param name="spriteBatch">The sprite batch to draw the component to.</param>
-    /// <param name="cursor">The mouse position.</param>
-    /// <param name="offset">The offset.</param>
-    public virtual void DrawInFrame(SpriteBatch spriteBatch, Point cursor, Point offset)
-    {
-        // Do nothing
+            new Rectangle(this.bounds.X, this.bounds.Y, this.bounds.Width, this.bounds.Height),
+            sb => this.DrawInFrame(sb, cursor));
     }
 
     /// <inheritdoc />
-    public virtual ICustomComponent MoveTo(Point location)
+    public virtual void DrawOver(SpriteBatch spriteBatch, Point cursor)
     {
-        this.bounds.Location = location;
-        return this;
+        if (!this.IsVisible)
+        {
+            return;
+        }
+
+        if (this.Bounds.Contains(cursor - this.Offset) && !string.IsNullOrWhiteSpace(this.HoverText))
+        {
+            IClickableMenu.drawToolTip(spriteBatch, this.HoverText, null, null);
+        }
+
+        foreach (var component in this.components)
+        {
+            component.DrawOver(spriteBatch, cursor);
+        }
     }
 
     /// <inheritdoc />
-    public virtual ICustomComponent ResizeTo(Point size)
+    public virtual void DrawUnder(SpriteBatch spriteBatch, Point cursor)
     {
-        this.bounds.Size = size;
-        return this;
-    }
+        if (!this.IsVisible)
+        {
+            return;
+        }
 
-    /// <inheritdoc />
-    public ICustomComponent SetColor(Color value)
-    {
-        this.Color = value;
-        return this;
-    }
+        IClickableMenu.drawTextureBox(
+            spriteBatch,
+            Game1.mouseCursors,
+            OptionsDropDown.dropDownBGSource,
+            this.bounds.X,
+            this.bounds.Y,
+            this.bounds.Width,
+            this.bounds.Height,
+            Color.White,
+            Game1.pixelZoom,
+            false,
+            0.97f);
 
-    /// <inheritdoc />
-    public ICustomComponent SetHoverText(string? value)
-    {
-        this.HoverText = value;
-        return this;
+        foreach (var component in this.components)
+        {
+            component.DrawUnder(spriteBatch, cursor);
+        }
     }
 
     /// <inheritdoc />
     public virtual bool TryLeftClick(Point cursor)
     {
-        if (!this.visible || !this.bounds.Contains(cursor))
+        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
         {
             return false;
         }
 
-        this.clicked.InvokeAll(this, new ClickedEventArgs(SButton.MouseLeft, cursor));
+        // Left-click components
+        foreach (var component in this.components.Where(component => component.TryLeftClick(cursor)))
+        {
+            this.clicked.InvokeAll(component, new UiEventArgs(SButton.MouseLeft, cursor));
+            return true;
+        }
+
+        this.clicked.InvokeAll(this, new UiEventArgs(SButton.MouseLeft, cursor));
         return true;
     }
 
     /// <inheritdoc />
     public virtual bool TryRightClick(Point cursor)
     {
-        if (!this.visible || !this.bounds.Contains(cursor))
+        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
         {
             return false;
         }
 
-        this.clicked.InvokeAll(this, new ClickedEventArgs(SButton.Right, cursor));
+        // Right-click components
+        foreach (var component in this.components.Where(component => component.TryRightClick(cursor)))
+        {
+            this.clicked.InvokeAll(component, new UiEventArgs(SButton.Right, cursor));
+            return true;
+        }
+
+        this.clicked.InvokeAll(this, new UiEventArgs(SButton.Right, cursor));
         return true;
     }
 
     /// <inheritdoc />
-    public virtual bool TryScroll(int direction) => false;
+    public virtual bool TryScroll(Point cursor, int direction) => false;
 
     /// <inheritdoc />
-    public virtual void Update(Point cursor) { }
+    public virtual void Update(Point cursor)
+    {
+        if (!this.IsVisible)
+        {
+            return;
+        }
+
+        foreach (var component in this.components)
+        {
+            component.Update(cursor);
+        }
+
+        if (this.isHovered == this.Bounds.Contains(cursor - this.Offset))
+        {
+            return;
+        }
+
+        this.isHovered = !this.isHovered;
+        (this.isHovered ? this.cursorOver : this.cursorOut)?.Invoke(this, new CursorEventArgs(cursor));
+    }
+
+    /// <summary>Clears the components.</summary>
+    protected void ClearComponents() => this.components.Clear();
+
+    /// <summary>Draws the component in a framed area.</summary>
+    /// <param name="spriteBatch">The sprite batch to draw the component to.</param>
+    /// <param name="cursor">The mouse position.</param>
+    protected virtual void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
+    {
+        foreach (var component in this.components)
+        {
+            component.Draw(spriteBatch, cursor);
+        }
+    }
 }

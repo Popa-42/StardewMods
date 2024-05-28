@@ -28,22 +28,15 @@ internal sealed class ExpressionTerm : ExpressionEditor
     /// <param name="width">The component width.</param>
     /// <param name="expression">The expression.</param>
     /// <param name="level">The level.</param>
-    public ExpressionTerm(
-        IIconRegistry iconRegistry,
-        ICustomMenu? parent,
-        int x,
-        int y,
-        int width,
-        IExpression expression,
-        int level)
-        : base(parent, x, y, width, 40, expression, level)
+    public ExpressionTerm(IIconRegistry iconRegistry, int x, int y, int width, IExpression expression, int level)
+        : base(x, y, width, 40, expression, level)
     {
         var subWidth = ((width - 12) / 2) - 15;
 
         // Left term
         var leftTerm = expression.Expressions.ElementAtOrDefault(0);
         var text = leftTerm is not null ? Localized.Attribute(leftTerm.Term) : I18n.Attribute_Any_Name();
-        this.leftComponent = new ButtonComponent(this.Parent, x, y, subWidth, 40, "left", text);
+        this.leftComponent = new ButtonComponent(x, y, subWidth, 40, "left", text);
         this.leftComponent.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this.leftComponent,
             new ExpressionChangedEventArgs(ExpressionChange.ChangeAttribute, this.Expression));
@@ -53,7 +46,6 @@ internal sealed class ExpressionTerm : ExpressionEditor
         // Right term
         var rightTerm = expression.Expressions.ElementAtOrDefault(1);
         this.rightComponent = new ButtonComponent(
-            this.Parent,
             x + subWidth + 12,
             y,
             subWidth,
@@ -69,7 +61,11 @@ internal sealed class ExpressionTerm : ExpressionEditor
 
         this.removeButton = iconRegistry
             .Icon(VanillaIcon.DoNot)
-            .Component(IconStyle.Transparent, x + width - 24, y + 8, 2f, "remove", I18n.Ui_Remove_Tooltip());
+            .Component(IconStyle.Transparent, "remove", 2f)
+            .AsBuilder()
+            .Location(new Point(x + width - 24, y + 8))
+            .HoverText(I18n.Ui_Remove_Tooltip())
+            .Value;
     }
 
     /// <inheritdoc />
@@ -77,31 +73,6 @@ internal sealed class ExpressionTerm : ExpressionEditor
     {
         add => this.expressionChanged += value;
         remove => this.expressionChanged -= value;
-    }
-
-    /// <inheritdoc />
-    public override void DrawInFrame(SpriteBatch spriteBatch, Point cursor, Point offset)
-    {
-        foreach (var component in this.components)
-        {
-            component.SetColor(
-                component.bounds.Contains(cursor - offset) ? this.BaseColor.Highlight() : this.BaseColor.Muted());
-
-            component.Draw(spriteBatch, cursor, offset);
-
-            if (component.Bounds.Contains(cursor - offset))
-            {
-                this.SetHoverText(component.HoverText);
-            }
-        }
-
-        this.removeButton.tryHover(cursor.X - offset.X, cursor.Y - offset.Y);
-        this.removeButton.draw(spriteBatch, Color.White, 1f, 0, offset.X, offset.Y);
-
-        if (this.removeButton.bounds.Contains(cursor - offset))
-        {
-            this.SetHoverText(this.removeButton.hoverText);
-        }
     }
 
     /// <inheritdoc />
@@ -122,5 +93,31 @@ internal sealed class ExpressionTerm : ExpressionEditor
             new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
 
         return true;
+    }
+
+    /// <inheritdoc />
+    protected override void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
+    {
+        foreach (var component in this.components)
+        {
+            component.Color = component.bounds.Contains(cursor - this.Offset)
+                ? this.BaseColor.Highlight()
+                : this.BaseColor.Muted();
+
+            component.Draw(spriteBatch, cursor);
+
+            if (component.Bounds.Contains(cursor - this.Offset))
+            {
+                this.HoverText = component.HoverText;
+            }
+        }
+
+        this.removeButton.tryHover(cursor.X - this.Offset.X, cursor.Y - this.Offset.Y);
+        this.removeButton.draw(spriteBatch, Color.White, 1f, 0, this.Offset.X, this.Offset.Y);
+
+        if (this.removeButton.bounds.Contains(cursor - this.Offset))
+        {
+            this.HoverText = this.removeButton.hoverText;
+        }
     }
 }

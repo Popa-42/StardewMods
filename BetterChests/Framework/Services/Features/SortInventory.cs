@@ -1,10 +1,13 @@
 namespace StardewMods.BetterChests.Framework.Services.Features;
 
+using Microsoft.Xna.Framework;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Models.Events;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Interfaces;
+using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
@@ -140,16 +143,17 @@ internal sealed class SortInventory : BaseFeature<SortInventory>
         this.organizeButton.Value =
             this
                 .iconRegistry.Icon(VanillaIcon.Organize)
-                .Component(
-                    IconStyle.Transparent,
-                    x,
-                    y,
-                    hoverText: Game1.content.LoadString("Strings\\UI:ItemGrab_Organize"));
+                .Component(IconStyle.Transparent)
+                .AsBuilder()
+                .Location(new Point(x, y))
+                .HoverText(Game1.content.LoadString("Strings\\UI:ItemGrab_Organize"))
+                .Value;
 
         itemGrabMenu.trashCan.bounds.Y -= Game1.tileSize;
         itemGrabMenu.okButton.upNeighborID = this.organizeButton.Value.myID;
         itemGrabMenu.trashCan.downNeighborID = this.organizeButton.Value.myID;
-        itemGrabMenu.allClickableComponents.Add(this.organizeButton.Value);
+
+        // itemGrabMenu.allClickableComponents.Add(this.organizeButton.Value);
     }
 
     private void OnRenderedActiveMenu(RenderedActiveMenuEventArgs e)
@@ -159,7 +163,7 @@ internal sealed class SortInventory : BaseFeature<SortInventory>
             return;
         }
 
-        var cursor = this.inputHelper.GetCursorPosition().GetScaledScreenPixels().ToPoint();
+        var cursor = UiToolkit.Cursor;
         this.organizeButton.Value.tryHover(cursor.X, cursor.Y);
         this.organizeButton.Value.draw(e.SpriteBatch);
         if (!this.organizeButton.Value.bounds.Contains(cursor))

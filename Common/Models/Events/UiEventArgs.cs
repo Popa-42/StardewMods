@@ -2,29 +2,28 @@
 namespace StardewMods.FauxCore.Common.Models.Events;
 
 using Microsoft.Xna.Framework;
-using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 
 #else
 namespace StardewMods.Common.Models.Events;
 
 using Microsoft.Xna.Framework;
-using StardewMods.Common.Services.Integrations.FauxCore;
 #endif
 
-/// <inheritdoc />
-internal sealed class ClickedEventArgs : IClicked
+/// <summary>The event arguments for a simple user interface event.</summary>
+internal sealed class UiEventArgs : EventArgs
 {
-    /// <summary></summary>
+    /// <summary>Initializes a new instance of the <see cref="UiEventArgs" /> class.</summary>
     /// <param name="button">The button pressed.</param>
     /// <param name="cursor">The cursor position.</param>
-    public ClickedEventArgs(SButton button, Point cursor)
+    public UiEventArgs(SButton button, Point cursor)
     {
         this.Button = button;
         this.Cursor = cursor;
     }
 
+    /// <summary>Gets the button pressed.</summary>
     public SButton Button { get; }
 
-    /// <inheritdoc />
+    /// <summary>Gets the cursor position.</summary>
     public Point Cursor { get; }
 }

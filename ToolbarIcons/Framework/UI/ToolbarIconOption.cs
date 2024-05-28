@@ -2,6 +2,8 @@ namespace StardewMods.ToolbarIcons.Framework.UI;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewMods.Common.Helpers;
+using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.Services.Integrations.GenericModConfigMenu;
 using StardewValley.BellsAndWhistles;
@@ -73,25 +75,37 @@ internal sealed class ToolbarIconOption : BaseComplexOption
         this.checkedComponent ??=
             this
                 .iconRegistry.Icon(VanillaIcon.Checked)
-                .Component(IconStyle.Transparent, hoverText: I18n.Config_CheckBox_Tooltip());
+                .Component(IconStyle.Transparent)
+                .AsBuilder()
+                .HoverText(I18n.Config_CheckBox_Tooltip())
+                .Value;
 
     private ClickableTextureComponent DownArrow =>
         this.downArrow ??=
             this
                 .iconRegistry.Icon(VanillaIcon.ArrowDown)
-                .Component(IconStyle.Transparent, hoverText: I18n.Config_MoveDown_Tooltip());
+                .Component(IconStyle.Transparent)
+                .AsBuilder()
+                .HoverText(I18n.Config_MoveDown_Tooltip())
+                .Value;
 
     private ClickableTextureComponent UncheckedIcon =>
         this.uncheckedComponent ??=
             this
                 .iconRegistry.Icon(VanillaIcon.Unchecked)
-                .Component(IconStyle.Transparent, hoverText: I18n.Config_CheckBox_Tooltip());
+                .Component(IconStyle.Transparent)
+                .AsBuilder()
+                .HoverText(I18n.Config_CheckBox_Tooltip())
+                .Value;
 
     private ClickableTextureComponent UpArrow =>
         this.upArrow ??=
             this
                 .iconRegistry.Icon(VanillaIcon.ArrowUp)
-                .Component(IconStyle.Transparent, hoverText: I18n.Config_MoveUp_Tooltip());
+                .Component(IconStyle.Transparent)
+                .AsBuilder()
+                .HoverText(I18n.Config_MoveUp_Tooltip())
+                .Value;
 
     private bool Enabled
     {
@@ -102,10 +116,10 @@ internal sealed class ToolbarIconOption : BaseComplexOption
     /// <inheritdoc />
     public override void Draw(SpriteBatch spriteBatch, Vector2 pos)
     {
-        var (mouseX, mouseY) = this.inputHelper.GetCursorPosition().GetScaledScreenPixels().ToPoint();
+        var cursor = UiToolkit.Cursor;
         var mouseLeft = this.inputHelper.GetState(SButton.MouseLeft) == SButtonState.Pressed;
         var mouseRight = this.inputHelper.GetState(SButton.MouseRight) == SButtonState.Pressed;
-        var hoverY = mouseY >= pos.Y && mouseY < pos.Y + this.Height;
+        var hoverY = cursor.Y >= pos.Y && cursor.Y < pos.Y + this.Height;
         var clicked = (mouseLeft || mouseRight) && hoverY;
 
         if (this.currentId != this.getCurrentId())
@@ -122,12 +136,11 @@ internal sealed class ToolbarIconOption : BaseComplexOption
 
         // Checkbox
         var checkbox = this.Enabled ? this.CheckedIcon : this.UncheckedIcon;
-        checkbox.bounds.X = (int)pos.X + Game1.tileSize;
-        checkbox.bounds.Y = (int)pos.Y;
-        checkbox.tryHover(mouseX, mouseY);
+        checkbox.bounds.Location = new Point((int)pos.X + Game1.tileSize, (int)pos.Y);
+        checkbox.tryHover(cursor.X, cursor.Y);
         checkbox.draw(spriteBatch);
 
-        if (checkbox.containsPoint(mouseX, mouseY))
+        if (checkbox.bounds.Contains(cursor))
         {
             ToolbarIconOption.hoverText = checkbox.hoverText;
             if (clicked)
@@ -137,19 +150,17 @@ internal sealed class ToolbarIconOption : BaseComplexOption
                 Game1.playSound("drumkit6");
             }
         }
-        else if ((mouseX < checkbox.bounds.Left || mouseX > checkbox.bounds.Right)
+        else if ((cursor.Y < checkbox.bounds.Left || cursor.X > checkbox.bounds.Right)
             && ToolbarIconOption.hoverText == checkbox.hoverText)
         {
             ToolbarIconOption.hoverText = null;
         }
 
         // Up Arrow
-        this.UpArrow.bounds.X = (int)pos.X + (Game1.tileSize * 2);
-        this.UpArrow.bounds.Y = (int)pos.Y;
-
-        if (this.moveUp is not null && this.UpArrow.containsPoint(mouseX, mouseY))
+        this.UpArrow.bounds.Location = new Point((int)pos.X + (Game1.tileSize * 2), (int)pos.Y);
+        if (this.moveUp is not null && this.UpArrow.bounds.Contains(cursor))
         {
-            this.UpArrow.tryHover(mouseX, mouseY);
+            this.UpArrow.tryHover(cursor.X, cursor.Y);
             ToolbarIconOption.hoverText = this.UpArrow.hoverText;
             if (clicked)
             {
@@ -158,7 +169,7 @@ internal sealed class ToolbarIconOption : BaseComplexOption
                 Game1.playSound("shwip");
             }
         }
-        else if ((mouseX < this.UpArrow.bounds.Left || mouseX > this.UpArrow.bounds.Right)
+        else if ((cursor.X < this.UpArrow.bounds.Left || cursor.X > this.UpArrow.bounds.Right)
             && ToolbarIconOption.hoverText == this.UpArrow.hoverText)
         {
             ToolbarIconOption.hoverText = null;
@@ -167,12 +178,10 @@ internal sealed class ToolbarIconOption : BaseComplexOption
         this.UpArrow.draw(spriteBatch, this.moveUp is not null ? Color.White : Color.Black * 0.35f, 1f);
 
         // Icon
-        this.icon.bounds.X = (int)pos.X + (Game1.tileSize * 3);
-        this.icon.bounds.Y = (int)pos.Y;
-
-        if (this.Enabled && this.icon.containsPoint(mouseX, mouseY))
+        this.icon.bounds.Location = new Point((int)pos.X + (Game1.tileSize * 3), (int)pos.Y);
+        if (this.Enabled && this.icon.bounds.Contains(cursor))
         {
-            this.icon.tryHover(mouseX, mouseY);
+            this.icon.tryHover(cursor.X, cursor.Y);
             ToolbarIconOption.hoverText = this.name;
         }
         else if (ToolbarIconOption.hoverText == this.name)
@@ -183,12 +192,10 @@ internal sealed class ToolbarIconOption : BaseComplexOption
         this.icon.draw(spriteBatch, this.Enabled ? Color.White : Color.Black * 0.35f, 1f);
 
         // Down Arrow
-        this.DownArrow.bounds.X = (int)pos.X + (Game1.tileSize * 4);
-        this.DownArrow.bounds.Y = (int)pos.Y;
-
-        if (this.moveDown is not null && this.DownArrow.containsPoint(mouseX, mouseY))
+        this.DownArrow.bounds.Location = new Point((int)pos.X + (Game1.tileSize * 4), (int)pos.Y);
+        if (this.moveDown is not null && this.DownArrow.bounds.Contains(cursor))
         {
-            this.DownArrow.tryHover(mouseX, mouseY);
+            this.DownArrow.tryHover(cursor.X, cursor.Y);
             ToolbarIconOption.hoverText = this.DownArrow.hoverText;
             if (clicked)
             {
@@ -197,14 +204,13 @@ internal sealed class ToolbarIconOption : BaseComplexOption
                 Game1.playSound("shwip");
             }
         }
-        else if ((mouseX < this.DownArrow.bounds.Left || mouseX > this.DownArrow.bounds.Right)
+        else if ((cursor.X < this.DownArrow.bounds.Left || cursor.X > this.DownArrow.bounds.Right)
             && ToolbarIconOption.hoverText == this.DownArrow.hoverText)
         {
             ToolbarIconOption.hoverText = null;
         }
 
         this.DownArrow.draw(spriteBatch, this.moveDown is not null ? Color.White : Color.Black * 0.35f, 1f);
-
         if (!string.IsNullOrWhiteSpace(ToolbarIconOption.hoverText))
         {
             IClickableMenu.drawToolTip(spriteBatch, ToolbarIconOption.hoverText, null, null);
@@ -216,7 +222,11 @@ internal sealed class ToolbarIconOption : BaseComplexOption
     {
         this.currentId = this.getCurrentId();
         this.name = this.currentId.Split('/')[^1];
-        this.icon = this.iconRegistry.Icon(this.currentId).Component(IconStyle.Button, scale: 3f);
-        this.icon.hoverText = this.getTooltip();
+        this.icon = this
+            .iconRegistry.Icon(this.currentId)
+            .Component(IconStyle.Button, scale: 3f)
+            .AsBuilder()
+            .HoverText(this.getTooltip())
+            .Value;
     }
 }

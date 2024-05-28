@@ -132,11 +132,8 @@ internal sealed class IconRegistry : IIconRegistry
     private ClickableTextureComponent CreateComponent(
         IIcon icon,
         IconStyle style,
-        int x = 0,
-        int y = 0,
-        float scale = Game1.pixelZoom,
         string? name = null,
-        string? hoverText = null)
+        float scale = Game1.pixelZoom)
     {
         var texture = this.GetTexture(icon, style);
         scale = style switch
@@ -148,28 +145,26 @@ internal sealed class IconRegistry : IIconRegistry
             _ => scale,
         };
 
-        var component = style switch
+        return style switch
         {
             IconStyle.Transparent => new ClickableTextureComponent(
                 name ?? icon.Id,
-                new Rectangle(x, y, (int)(icon.Area.Width * scale), (int)(icon.Area.Height * scale)),
+                new Rectangle(0, 0, (int)(icon.Area.Width * scale), (int)(icon.Area.Height * scale)),
                 null,
-                hoverText,
+                null,
                 texture,
                 icon.Area,
                 scale),
             IconStyle.Button => new ClickableTextureComponent(
                 name ?? icon.Id,
-                new Rectangle(x, y, (int)(scale * 16), (int)(scale * 16)),
+                new Rectangle(0, 0, (int)(scale * 16), (int)(scale * 16)),
                 null,
-                hoverText,
+                null,
                 texture,
                 new Rectangle(0, 0, texture.Width, texture.Height),
                 scale),
             _ => throw new ArgumentOutOfRangeException(nameof(style), style, null),
         };
-
-        return component;
     }
 
     private Texture2D GetTexture(IIcon icon, IconStyle style) =>
