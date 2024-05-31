@@ -540,9 +540,12 @@ internal sealed class ExpressionEditor : BaseMenu
 
         var popupSelect = new OptionPopup<string>(this.iconRegistry, component.label, popupItems, 10);
 
-        popupSelect.OptionSelected += (_, _) =>
+        popupSelect.OptionSelected += (_, option) =>
         {
-            this.ChangeTerm(expression, popupSelect.CurrentText);
+            if (option is not null)
+            {
+                this.ChangeTerm(expression, option);
+            }
         };
 
         //this.Parent?.SetChildMenu(popupSelect);

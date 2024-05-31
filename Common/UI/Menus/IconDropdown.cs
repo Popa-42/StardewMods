@@ -52,7 +52,7 @@ internal sealed class IconDropdown : BaseMenu
 
         iconSelector.SelectionChanged += (_, icon) => this.iconSelected?.InvokeAll(this, icon);
 
-        this.AddComponent(iconSelector);
+        this.Components.Add(iconSelector);
         this.Size = new Point(iconSelector.Bounds.Width + spacing, iconSelector.Bounds.Height + spacing);
 
         // Default position is bottom-right

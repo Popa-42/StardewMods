@@ -118,7 +118,8 @@ internal sealed class SortMenu : SearchMenu
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
-            this.SetSearchText(searchText, true);
+            this.SearchText = searchText;
+            this.UpdateExpression();
             return true;
         }
 

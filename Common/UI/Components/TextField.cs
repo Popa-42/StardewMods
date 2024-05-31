@@ -3,6 +3,7 @@ namespace StardewMods.FauxCore.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewMods.FauxCore.Common.Helpers;
 using StardewValley.Menus;
 
 #else
@@ -10,6 +11,7 @@ namespace StardewMods.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewMods.Common.Helpers;
 using StardewValley.Menus;
 #endif
 
@@ -18,40 +20,50 @@ internal sealed class TextField : BaseComponent
 {
     private const int CountdownTimer = 20;
 
-    private readonly Func<string> getMethod;
-    private readonly Action<string> setMethod;
     private readonly TextBox textBox;
+
     private string previousText;
     private int timeout;
+    private EventHandler<string>? valueChanged;
 
     /// <summary>Initializes a new instance of the <see cref="TextField" /> class.</summary>
     /// <param name="x">The text field x-coordinate.</param>
     /// <param name="y">The text field y-coordinate.</param>
     /// <param name="width">The text field width.</param>
-    /// <param name="getMethod">A function that gets the current value.</param>
-    /// <param name="setMethod">An action that sets the current value.</param>
+    /// <param name="initialValue">The initial textbox value.</param>
     /// <param name="name">The text field name.</param>
-    public TextField(
-        int x,
-        int y,
-        int width,
-        Func<string> getMethod,
-        Action<string> setMethod,
-        string name = "TextField")
+    public TextField(int x, int y, int width, string? initialValue = null, string name = "TextField")
         : base(x, y, width, 48, name)
     {
-        this.previousText = getMethod();
-        this.getMethod = getMethod;
-        this.setMethod = setMethod;
-        var texture = Game1.content.Load<Texture2D>("LooseSprites\\textBox");
-        this.textBox = new TextBox(texture, null, Game1.smallFont, Game1.textColor)
+        this.previousText = initialValue ?? string.Empty;
+        this.textBox =
+            new TextBox(Game1.content.Load<Texture2D>("LooseSprites\\textBox"), null, Game1.smallFont, Game1.textColor)
+            {
+                X = this.Bounds.X,
+                Y = this.Bounds.Y,
+                Width = this.Bounds.Width,
+                limitWidth = false,
+                Text = this.previousText,
+            };
+    }
+
+    /// <summary>Event raised when the text value changes.</summary>
+    public event EventHandler<string> ValueChanged
+    {
+        add => this.valueChanged += value;
+        remove => this.valueChanged -= value;
+    }
+
+    /// <inheritdoc />
+    public override Point Location
+    {
+        get => base.Location;
+        set
         {
-            X = this.bounds.X,
-            Y = this.bounds.Y,
-            Width = this.bounds.Width,
-            limitWidth = false,
-            Text = this.previousText,
-        };
+            base.Location = value;
+            this.textBox.X = value.X;
+            this.textBox.Y = value.Y;
+        }
     }
 
     /// <summary>Gets or sets a value indicating whether the search bar is currently selected.</summary>
@@ -61,22 +73,35 @@ internal sealed class TextField : BaseComponent
         set => this.textBox.Selected = value;
     }
 
-    private string Text
+    /// <inheritdoc />
+    public override Point Size
     {
-        get => this.getMethod();
-        set => this.setMethod(value);
+        get => base.Size;
+        set
+        {
+            base.Size = value;
+            this.textBox.Width = value.X;
+        }
+    }
+
+    /// <summary>Gets or sets the textbox value.</summary>
+    public string Value
+    {
+        get => this.textBox.Text;
+        set
+        {
+            this.textBox.Text = value;
+            this.previousText = value;
+        }
     }
 
     /// <inheritdoc />
     public override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
-        this.textBox.X = this.bounds.X + this.Offset.X;
-        this.textBox.Y = this.bounds.Y + this.Offset.Y;
+        this.textBox.X = this.Bounds.X + this.Offset.X;
+        this.textBox.Y = this.Bounds.Y + this.Offset.Y;
         this.textBox.Draw(spriteBatch, false);
     }
-
-    /// <summary>Reset the value of the text box.</summary>
-    public void Reset() => this.textBox.Text = this.Text;
 
     /// <inheritdoc />
     public override bool TryLeftClick(Point cursor)
@@ -95,7 +120,8 @@ internal sealed class TextField : BaseComponent
         }
 
         this.Selected = true;
-        this.textBox.Text = string.Empty;
+        this.Value = string.Empty;
+        this.valueChanged?.InvokeAll(this, this.Value);
         return this.Selected;
     }
 
@@ -103,17 +129,22 @@ internal sealed class TextField : BaseComponent
     public override void Update(Point cursor)
     {
         this.textBox.Hover(cursor.X, cursor.Y);
-        if (this.timeout > 0 && --this.timeout == 0 && this.Text != this.textBox.Text)
+
+        // Initiate a text change event
+        if (this.previousText != this.Value)
         {
-            this.Text = this.textBox.Text;
+            this.previousText = this.Value;
+            this.timeout = TextField.CountdownTimer;
+            return;
         }
 
-        if (this.textBox.Text.Equals(this.previousText, StringComparison.Ordinal))
+        // Start countdown for debounce
+        if (this.timeout == 0 || --this.timeout != 0)
         {
             return;
         }
 
-        this.timeout = TextField.CountdownTimer;
-        this.previousText = this.textBox.Text;
+        // Raise the text change event
+        this.valueChanged?.InvokeAll(this, this.Value);
     }
 }

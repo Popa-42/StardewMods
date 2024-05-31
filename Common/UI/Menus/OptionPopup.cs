@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewMods.FauxCore.Common.Helpers;
-using StardewMods.FauxCore.Common.Models.Events;
 using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 using StardewMods.FauxCore.Common.UI.Components;
 using StardewValley.Menus;
@@ -17,7 +16,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewMods.Common.Helpers;
-using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
@@ -30,7 +28,6 @@ internal sealed class OptionPopup<TOption> : BaseMenu
     private readonly OptionSelector<TOption> optionSelector;
     private readonly TextField textField;
 
-    private string currentText;
     private EventHandler<TOption?>? optionSelected;
 
     /// <summary>Initializes a new instance of the <see cref="OptionPopup{TOption}" /> class.</summary>
@@ -59,23 +56,20 @@ internal sealed class OptionPopup<TOption> : BaseMenu
             this.Bounds.X,
             this.Bounds.Y);
 
-        this.optionSelector.SelectionChanged += this.SelectionChanged;
         this.optionSelector.AddHighlight(this.HighlightOption);
         this.optionSelector.AddOperation(this.SortOptions);
-        this.AddComponent(this.optionSelector);
+        this.Components.Add(this.optionSelector);
 
         this.Size = new Point(this.optionSelector.Bounds.Width + spacing, this.optionSelector.Bounds.Height + spacing);
         this.Location = new Point(
             ((Game1.uiViewport.Width - this.Bounds.Width) / 2) + IClickableMenu.borderWidth,
             ((Game1.uiViewport.Height - this.Bounds.Height) / 2) + IClickableMenu.borderWidth);
 
-        this.currentText = initialText ?? string.Empty;
         this.textField = new TextField(
             this.Bounds.X - 12,
             this.Bounds.Y,
             this.Bounds.Width,
-            () => this.CurrentText,
-            value => this.CurrentText = value)
+            initialText ?? string.Empty)
         {
             Selected = true,
         };
@@ -90,8 +84,6 @@ internal sealed class OptionPopup<TOption> : BaseMenu
                     this.yPositionOnScreen + this.height + Game1.tileSize))
             .Value;
 
-        okButton.Clicked += this.OnConfirm;
-
         var cancelButton = iconRegistry
             .Icon(VanillaIcon.Cancel)
             .Component(IconStyle.Transparent)
@@ -102,12 +94,27 @@ internal sealed class OptionPopup<TOption> : BaseMenu
                     this.yPositionOnScreen + this.height + Game1.tileSize))
             .Value;
 
-        cancelButton.Clicked += this.OnCancel;
+        this.optionSelector.SelectionChanged += (_, option) =>
+            this.textField.Value = option is not null ? this.optionSelector.GetLabel(option) : string.Empty;
+
+        this.textField.ValueChanged += (_, _) => this.optionSelector.RefreshOptions();
+
+        okButton.Clicked += (_, _) =>
+        {
+            if (this.optionSelector.CurrentSelection is not null)
+            {
+                this.optionSelected?.InvokeAll(this, this.optionSelector.CurrentSelection);
+            }
+
+            this.exitThisMenuNoSound();
+        };
+
+        cancelButton.Clicked += (_, _) => this.exitThisMenuNoSound();
 
         // Add scrollbar
-        this.AddComponent(this.textField);
-        this.AddComponent(okButton);
-        this.AddComponent(cancelButton);
+        this.Components.Add(this.textField);
+        this.Components.Add(okButton);
+        this.Components.Add(cancelButton);
     }
 
     /// <summary>Event raised when the selection changes.</summary>
@@ -115,23 +122,6 @@ internal sealed class OptionPopup<TOption> : BaseMenu
     {
         add => this.optionSelected += value;
         remove => this.optionSelected -= value;
-    }
-
-    /// <summary>Gets or sets the current text.</summary>
-    public string CurrentText
-    {
-        get => this.currentText;
-        set
-        {
-            if (this.currentText.Equals(value, StringComparison.OrdinalIgnoreCase))
-            {
-                this.currentText = value;
-                return;
-            }
-
-            this.currentText = value;
-            this.optionSelector.RefreshOptions();
-        }
     }
 
     /// <inheritdoc />
@@ -147,10 +137,9 @@ internal sealed class OptionPopup<TOption> : BaseMenu
                 this.exitThisMenuNoSound();
                 return;
             case Keys.Tab when this.textField.Selected
-                && !string.IsNullOrWhiteSpace(this.CurrentText)
+                && !string.IsNullOrWhiteSpace(this.textField.Value)
                 && this.optionSelector.Options.Any():
-                this.CurrentText = this.optionSelector.GetLabel(this.optionSelector.Options[0]);
-                this.textField.Reset();
+                this.textField.Value = this.optionSelector.GetLabel(this.optionSelector.Options[0]);
                 break;
         }
     }
@@ -163,25 +152,7 @@ internal sealed class OptionPopup<TOption> : BaseMenu
             Color.Black * 0.5f);
 
     private bool HighlightOption(TOption option) =>
-        this.optionSelector.GetLabel(option).Contains(this.CurrentText, StringComparison.OrdinalIgnoreCase);
-
-    private void OnCancel(object? sender, UiEventArgs e) => this.exitThisMenuNoSound();
-
-    private void OnConfirm(object? sender, UiEventArgs e)
-    {
-        if (this.optionSelector.CurrentSelection is not null)
-        {
-            this.optionSelected?.InvokeAll(this, this.optionSelector.CurrentSelection);
-        }
-
-        this.exitThisMenuNoSound();
-    }
-
-    private void SelectionChanged(object? sender, TOption? option)
-    {
-        this.CurrentText = option is not null ? this.optionSelector.GetLabel(option) : string.Empty;
-        this.textField.Reset();
-    }
+        this.optionSelector.GetLabel(option).Contains(this.textField.Value, StringComparison.OrdinalIgnoreCase);
 
     private IEnumerable<TOption> SortOptions(IEnumerable<TOption> options) =>
         options.OrderByDescending(this.HighlightOption).ThenBy(this.optionSelector.GetLabel);

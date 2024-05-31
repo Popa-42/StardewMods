@@ -25,8 +25,8 @@ internal class SearchMenu : BaseMenu
     /// <summary>Initializes a new instance of the <see cref="SearchMenu" /> class.</summary>
     /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
-    /// <param name="searchText">The initial search text.</param>
-    public SearchMenu(IExpressionHandler expressionHandler, IIconRegistry iconRegistry, string searchText)
+    /// <param name="initialValue">The initial search text.</param>
+    public SearchMenu(IExpressionHandler expressionHandler, IIconRegistry iconRegistry, string initialValue)
     {
         this.expressionHandler = expressionHandler;
 
@@ -48,8 +48,8 @@ internal class SearchMenu : BaseMenu
         this.expressionEditor = new ExpressionsMenu(
             this.expressionHandler,
             iconRegistry,
-            () => this.SearchText!,
-            value => this.SetSearchText(value),
+            () => this.SearchText,
+            value => this.SearchText = value,
             this.xPositionOnScreen + IClickableMenu.borderWidth,
             this.yPositionOnScreen
             + IClickableMenu.spaceToClearSideBorder
@@ -78,8 +78,6 @@ internal class SearchMenu : BaseMenu
             this.inventory.yPositionOnScreen + 4,
             this.inventory.height);
 
-        this.SetSearchText(searchText, true);
-
         this.textField = new TextField(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2),
             this.yPositionOnScreen
@@ -87,18 +85,21 @@ internal class SearchMenu : BaseMenu
             + (IClickableMenu.borderWidth / 2)
             + Game1.tileSize,
             this.width - (IClickableMenu.spaceToClearSideBorder * 2) - IClickableMenu.borderWidth,
-            () => this.SearchText,
-            value =>
-            {
-                this.SetSearchText(value, true);
-            });
+            this.SearchText);
 
-        this.allClickableComponents.Add(this.textField);
-        this.allClickableComponents.Add(this.scrollInventory);
+        this.textField.ValueChanged += (_, _) => this.UpdateExpression();
+
+        this.Components.Add(this.textField);
+        this.Components.Add(this.scrollInventory);
+        this.UpdateExpression();
     }
 
-    /// <summary>Gets the current search text.</summary>
-    public string SearchText { get; private set; }
+    /// <summary>Gets or sets the current search text.</summary>
+    public string SearchText
+    {
+        get => this.textField.Value;
+        protected set => this.textField.Value = value;
+    }
 
     /// <summary>Gets the current search expression.</summary>
     protected IExpression? Expression { get; private set; }
@@ -176,27 +177,17 @@ internal class SearchMenu : BaseMenu
             this.allItems.Count / ((float)this.inventory.capacity / this.inventory.rows));
     }
 
-    /// <summary>Updates the search text without parsing.</summary>
-    /// <param name="value">The new search text value.</param>
-    /// <param name="parse">Indicates whether to parse the text.</param>
-    [MemberNotNull(nameof(SearchMenu.SearchText))]
-    protected void SetSearchText(string value, bool parse = false)
-    {
-        this.SearchText = value;
-        if (parse)
-        {
-            this.Expression = this.expressionHandler.TryParseExpression(this.SearchText, out var expression)
-                ? expression
-                : null;
-
-            this.expressionEditor.ReInitializeComponents(this.Expression);
-        }
-
-        this.textField?.Reset();
-        this.RefreshItems();
-    }
-
     /// <inheritdoc />
     protected override bool TryScroll(Point cursor, int direction) =>
         this.inventory.isWithinBounds(cursor.X, cursor.Y) && this.scrollInventory.TryScroll(cursor, direction);
+
+    /// <summary>Update the expression by parsing from the search text.</summary>
+    protected void UpdateExpression()
+    {
+        this.Expression = this.expressionHandler.TryParseExpression(this.SearchText, out var expression)
+            ? expression
+            : null;
+
+        this.expressionEditor.ReInitializeComponents(this.Expression);
+    }
 }

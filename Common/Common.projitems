@@ -111,6 +111,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Services\EventManager.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Services\Log.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Services\UiToolkit.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ComponentList.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\BaseComponent.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ButtonComponent.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ComponentBuilder.cs"/>

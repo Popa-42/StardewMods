@@ -142,7 +142,7 @@ internal sealed class OptionSelector<TOption> : BaseComponent
     [MemberNotNull(nameof(OptionSelector<TOption>.options))]
     public void RefreshOptions()
     {
-        this.ClearComponents();
+        this.Components.Clear();
         this.options = this.operations.Aggregate(this.allOptions, (current, operation) => operation(current)).ToList();
 
         foreach (var option in this.options)
@@ -177,20 +177,25 @@ internal sealed class OptionSelector<TOption> : BaseComponent
                     this.HighlightOption(option) ? Game1.textColor : Game1.unselectedOptionColor;
             };
 
-            this.AddComponent(component);
+            this.Components.Add(component);
         }
 
         this.Overflow = new Point(
             0,
-            this.Components.Any()
-                ? Math.Max(0, this.Components[^1].Bounds.Bottom - this.Bounds.Y - this.Bounds.Height + this.spacing)
+            this.Components.OfType<ICustomComponent>().Any()
+                ? Math.Max(
+                    0,
+                    this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
+                    - this.Bounds.Y
+                    - this.Bounds.Height
+                    + this.spacing)
                 : 0);
     }
 
     /// <inheritdoc />
     protected override void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
     {
-        var currentComponent = this.Components.ElementAtOrDefault(this.CurrentIndex);
+        var currentComponent = this.Components.OfType<ICustomComponent>().ElementAtOrDefault(this.CurrentIndex);
         if (currentComponent is not null)
         {
             spriteBatch.Draw(
@@ -208,7 +213,7 @@ internal sealed class OptionSelector<TOption> : BaseComponent
                 0.975f);
         }
 
-        foreach (var component in this.Components)
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             var index = int.Parse(component.Name, CultureInfo.InvariantCulture);
             spriteBatch.DrawString(

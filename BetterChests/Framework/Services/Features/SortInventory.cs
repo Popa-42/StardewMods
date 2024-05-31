@@ -152,8 +152,7 @@ internal sealed class SortInventory : BaseFeature<SortInventory>
         itemGrabMenu.trashCan.bounds.Y -= Game1.tileSize;
         itemGrabMenu.okButton.upNeighborID = this.organizeButton.Value.myID;
         itemGrabMenu.trashCan.downNeighborID = this.organizeButton.Value.myID;
-
-        // itemGrabMenu.allClickableComponents.Add(this.organizeButton.Value);
+        itemGrabMenu.allClickableComponents.Add(this.organizeButton.Value);
     }
 
     private void OnRenderedActiveMenu(RenderedActiveMenuEventArgs e)

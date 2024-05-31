@@ -42,7 +42,7 @@ internal sealed class OptionDropdown<TOption> : BaseMenu
         var optionSelector = new OptionSelector<TOption>(options, minWidth, maxWidth, maxOptions, getLabel, spacing);
         optionSelector.SelectionChanged += (_, option) => this.optionSelected?.InvokeAll(this, option);
 
-        this.AddComponent(optionSelector);
+        this.Components.Add(optionSelector);
         this.Size = new Point(optionSelector.Bounds.Width + spacing, optionSelector.Bounds.Height + spacing);
 
         // Default position is bottom-right

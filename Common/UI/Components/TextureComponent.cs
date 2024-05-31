@@ -22,8 +22,6 @@ using StardewValley.Menus;
 /// <summary>Base custom texture component.</summary>
 internal sealed class TextureComponent : ClickableTextureComponent, ICustomComponent
 {
-    private readonly List<ICustomComponent> components = [];
-
     private EventHandler<UiEventArgs>? clicked;
     private EventHandler<CursorEventArgs>? cursorOut;
     private EventHandler<CursorEventArgs>? cursorOver;
@@ -38,10 +36,8 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <param name="sourceRect">The source rectangle..</param>
     /// <param name="scale">The texture scale.</param>
     public TextureComponent(string name, Rectangle bounds, Texture2D texture, Rectangle sourceRect, float scale)
-        : base(name, bounds, null, null, texture, sourceRect, scale)
-    {
-        // Do nothing
-    }
+        : base(name, bounds, null, null, texture, sourceRect, scale) =>
+        this.Components = new ComponentList(this);
 
     /// <inheritdoc />
     public event EventHandler<UiEventArgs>? Clicked
@@ -72,7 +68,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<ICustomComponent> Components => this.components;
+    public ComponentList Components { get; }
 
     /// <inheritdoc />
     public float BaseScale
@@ -165,14 +161,6 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     }
 
     /// <inheritdoc />
-    public ICustomComponent AddComponent(ICustomComponent component)
-    {
-        this.components.Add(component);
-        component.Parent = this;
-        return this;
-    }
-
-    /// <inheritdoc />
     public void Draw(SpriteBatch spriteBatch, Point cursor)
     {
         if (!this.IsVisible)
@@ -201,7 +189,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <inheritdoc />
     public void DrawUnder(SpriteBatch spriteBatch, Point cursor)
     {
-        if (!this.IsVisible) { }
+        // Do nothing
     }
 
     /// <inheritdoc />

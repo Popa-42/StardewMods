@@ -145,7 +145,7 @@ internal sealed class IconSelector : BaseComponent
     [MemberNotNull(nameof(IconSelector.icons))]
     public void RefreshIcons()
     {
-        this.ClearComponents();
+        this.Components.Clear();
         this.icons = this.operations.Aggregate(this.allIcons, (current, operation) => operation(current)).ToList();
         foreach (var icon in this.icons)
         {
@@ -186,13 +186,18 @@ internal sealed class IconSelector : BaseComponent
                 customComponent.Color = this.HighlightIcon(icon) ? Color.White : Color.White * 0.25f;
             };
 
-            this.AddComponent(component);
+            this.Components.Add(component);
         }
 
         this.Overflow = new Point(
             0,
-            this.Components.Any()
-                ? Math.Max(0, this.Components[^1].Bounds.Bottom - this.Bounds.Y - this.Bounds.Height + this.spacing)
+            this.Components.OfType<ICustomComponent>().Any()
+                ? Math.Max(
+                    0,
+                    this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
+                    - this.Bounds.Y
+                    - this.Bounds.Height
+                    + this.spacing)
                 : 0);
     }
 

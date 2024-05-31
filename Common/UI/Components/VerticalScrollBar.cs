@@ -24,9 +24,9 @@ using StardewValley.Menus;
 /// <summary>Represents a scrollbar with up/down arrows.</summary>
 internal sealed class VerticalScrollBar : BaseComponent
 {
-    private readonly ICustomComponent arrowDown;
-    private readonly ICustomComponent arrowUp;
-    private readonly ICustomComponent grabber;
+    private readonly TextureComponent arrowDown;
+    private readonly TextureComponent arrowUp;
+    private readonly TextureComponent grabber;
     private Rectangle runner;
     private EventHandler<ScrolledEventArgs>? scrolled;
 
@@ -62,9 +62,9 @@ internal sealed class VerticalScrollBar : BaseComponent
             .Location(this.runner.Location)
             .Value;
 
-        this.AddComponent(this.arrowUp);
-        this.AddComponent(this.arrowDown);
-        this.AddComponent(this.grabber);
+        this.Components.Add(this.arrowUp);
+        this.Components.Add(this.arrowDown);
+        this.Components.Add(this.grabber);
 
         this.arrowUp.Clicked += (_, _) =>
         {

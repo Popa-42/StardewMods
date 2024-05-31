@@ -34,7 +34,7 @@ internal interface ICustomComponent
     Rectangle Bounds { get; }
 
     /// <summary>Gets the child components.</summary>
-    IReadOnlyList<ICustomComponent> Components { get; }
+    ComponentList Components { get; }
 
     /// <summary>Gets or sets the component base scale.</summary>
     float BaseScale { get; set; }
@@ -74,11 +74,6 @@ internal interface ICustomComponent
 
     /// <summary>Gets or sets the component size.</summary>
     Point Size { get; set; }
-
-    /// <summary>Adds a child component.</summary>
-    /// <param name="component">The component.</param>
-    /// <returns>Returns the parent component.</returns>
-    ICustomComponent AddComponent(ICustomComponent component);
 
     /// <summary>Draws the component.</summary>
     /// <param name="spriteBatch">The sprite batch to draw the component to.</param>

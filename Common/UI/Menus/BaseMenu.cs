@@ -39,6 +39,7 @@ internal class BaseMenu : IClickableMenu
             height ?? 600 + (IClickableMenu.borderWidth * 2),
             showUpperRightCloseButton)
     {
+        this.Components = new ComponentList(this);
         this.allClickableComponents ??= [];
         this.bounds = new Rectangle(this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height);
         if (this.upperRightCloseButton is not null)
@@ -51,7 +52,7 @@ internal class BaseMenu : IClickableMenu
     public virtual Rectangle Bounds => this.bounds;
 
     /// <summary>Gets the components.</summary>
-    public IEnumerable<ClickableComponent> Components => this.allClickableComponents;
+    public ComponentList Components { get; }
 
     /// <summary>Gets or sets the hover text.</summary>
     public string? HoverText { get; set; }
@@ -84,18 +85,6 @@ internal class BaseMenu : IClickableMenu
             this.width = value.X;
             this.height = value.Y;
         }
-    }
-
-    /// <summary>Adds a component to the current menu.</summary>
-    /// <param name="component">The component to add.</param>
-    /// <typeparam name="TComponent">The component type.</typeparam>
-    /// <returns>Returns the menu.</returns>
-    public BaseMenu AddComponent<TComponent>(TComponent component)
-        where TComponent : ClickableComponent, ICustomComponent
-    {
-        this.allClickableComponents.Add(component);
-        component.Menu = this;
-        return this;
     }
 
     /// <inheritdoc />
@@ -201,9 +190,10 @@ internal class BaseMenu : IClickableMenu
         var cursor = new Point(x, y);
 
         if (this.TryLeftClick(new Point(x, y))
-            || this
-                .allClickableComponents.OfType<ICustomComponent>()
-                .Any(component => component.TryLeftClick(cursor))) { }
+            || this.allClickableComponents.OfType<ICustomComponent>().Any(component => component.TryLeftClick(cursor)))
+        {
+            // Do nothing
+        }
     }
 
     /// <inheritdoc />
@@ -213,9 +203,10 @@ internal class BaseMenu : IClickableMenu
         var cursor = new Point(x, y);
 
         if (this.TryRightClick(new Point(x, y))
-            || this
-                .allClickableComponents.OfType<ICustomComponent>()
-                .Any(component => component.TryRightClick(cursor))) { }
+            || this.allClickableComponents.OfType<ICustomComponent>().Any(component => component.TryRightClick(cursor)))
+        {
+            // Do nothing
+        }
     }
 
     /// <inheritdoc />
@@ -226,7 +217,10 @@ internal class BaseMenu : IClickableMenu
         if (this.TryScroll(cursor, direction)
             || this
                 .allClickableComponents.OfType<ICustomComponent>()
-                .Any(component => component.TryScroll(cursor, direction))) { }
+                .Any(component => component.TryScroll(cursor, direction)))
+        {
+            // Do nothing
+        }
     }
 
     /// <inheritdoc />

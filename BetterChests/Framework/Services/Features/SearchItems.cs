@@ -1,5 +1,6 @@
 namespace StardewMods.BetterChests.Framework.Services.Features;
 
+using Microsoft.Xna.Framework;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Interfaces;
@@ -18,9 +19,8 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
     private readonly IInputHelper inputHelper;
     private readonly PerScreen<bool> isActive = new(() => true);
     private readonly MenuHandler menuHandler;
-    private readonly PerScreen<TextField?> searchBar = new();
+    private readonly PerScreen<TextField> searchBar;
     private readonly PerScreen<IExpression?> searchExpression = new();
-    private readonly PerScreen<string> searchText = new(() => string.Empty);
 
     /// <summary>Initializes a new instance of the <see cref="SearchItems" /> class.</summary>
     /// <param name="eventManager">Dependency used for managing events.</param>
@@ -39,6 +39,27 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
         this.expressionHandler = expressionHandler;
         this.inputHelper = inputHelper;
         this.menuHandler = menuHandler;
+
+        this.searchBar = new PerScreen<TextField>(
+            () =>
+            {
+                var textField = new TextField(0, 0, Math.Min(12 * Game1.tileSize, Game1.uiViewport.Width));
+                textField.ValueChanged += (_, value) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        Log.Trace("{0}: Searching for {1}", this.Id, value);
+                    }
+
+                    this.searchExpression.Value = this.expressionHandler.TryParseExpression(value, out var expression)
+                        ? expression
+                        : null;
+
+                    this.Events.Publish(new SearchChangedEventArgs(value, expression));
+                };
+
+                return textField;
+            });
     }
 
     /// <inheritdoc />
@@ -77,7 +98,6 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
         var container = this.menuHandler.Top.Container;
         if (container is null
             || !this.isActive.Value
-            || this.searchBar.Value is null
             || this.menuHandler.CurrentMenu is not ItemGrabMenu
             || !this.menuHandler.CanFocus(this))
         {
@@ -143,30 +163,29 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
         }
 
         // Copy Search
-        if (this.searchBar.Value?.Selected == true && this.Config.Controls.Copy.JustPressed())
+        if (this.searchBar.Value.Selected && this.Config.Controls.Copy.JustPressed())
         {
             this.inputHelper.SuppressActiveKeybinds(this.Config.Controls.Copy);
-            DesktopClipboard.SetText(this.searchText.Value);
+            DesktopClipboard.SetText(this.searchBar.Value.Value);
             return;
         }
 
         // Paste Search
-        if (this.searchBar.Value?.Selected == true && this.Config.Controls.Paste.JustPressed())
+        if (this.searchBar.Value.Selected && this.Config.Controls.Paste.JustPressed())
         {
             this.inputHelper.SuppressActiveKeybinds(this.Config.Controls.Paste);
-            var pasteText = string.Empty;
-            DesktopClipboard.GetText(ref pasteText);
-            this.searchText.Value = pasteText;
-            this.searchBar.Value.Reset();
-            _ = this.expressionHandler.TryParseExpression(pasteText, out var expression);
-            this.Events.Publish(new SearchChangedEventArgs(pasteText, expression));
+            var searchText = string.Empty;
+            DesktopClipboard.GetText(ref searchText);
+            this.searchBar.Value.Value = searchText;
+            _ = this.expressionHandler.TryParseExpression(searchText, out var expression);
+            this.Events.Publish(new SearchChangedEventArgs(searchText, expression));
             return;
         }
 
         // Clear Search
         if (this.isActive.Value && this.Config.Controls.ClearSearch.JustPressed())
         {
-            this.searchText.Value = string.Empty;
+            this.searchBar.Value.Value = string.Empty;
             this.searchExpression.Value = null;
             this.Events.Publish(new SearchChangedEventArgs(string.Empty, null));
         }
@@ -178,12 +197,10 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
         var top = this.menuHandler.Top;
         if (top.InventoryMenu is null || container?.SearchItems is not FeatureOption.Enabled)
         {
-            this.searchBar.Value = null;
             return;
         }
 
-        var width = Math.Min(12 * Game1.tileSize, Game1.uiViewport.Width);
-
+        var width = this.searchBar.Value.Bounds.Width;
         var x = top.Columns switch
         {
             3 => top.InventoryMenu.inventory[1].bounds.Center.X - (width / 2),
@@ -197,30 +214,7 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
             - Game1.tileSize
             - (top.Rows == 3 ? 25 : 4);
 
-        this.searchBar.Value = new TextField(
-            x,
-            y,
-            width,
-            () => this.searchText.Value,
-            value =>
-            {
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    Log.Trace("{0}: Searching for {1}", this.Id, value);
-                }
-
-                if (this.searchText.Value == value)
-                {
-                    return;
-                }
-
-                this.searchText.Value = value;
-                this.searchExpression.Value = this.expressionHandler.TryParseExpression(value, out var expression)
-                    ? expression
-                    : null;
-
-                this.Events.Publish(new SearchChangedEventArgs(value, expression));
-            });
+        this.searchBar.Value.Location = new Point(x, y);
     }
 
     private void OnItemHighlighting(ItemHighlightingEventArgs e)
@@ -254,7 +248,7 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
     private void OnRenderedActiveMenu(RenderedActiveMenuEventArgs e)
     {
         var container = this.menuHandler.Top.Container;
-        if (this.searchBar.Value is null || !this.isActive.Value || container is null)
+        if (!this.isActive.Value || container is null)
         {
             return;
         }
@@ -265,7 +259,7 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
 
     private void OnRenderingActiveMenu(RenderingActiveMenuEventArgs e)
     {
-        if (this.searchBar.Value is null || !this.isActive.Value || this.menuHandler.CurrentMenu is not ItemGrabMenu)
+        if (!this.isActive.Value || this.menuHandler.CurrentMenu is not ItemGrabMenu)
         {
             return;
         }
@@ -276,13 +270,12 @@ internal sealed class SearchItems : BaseFeature<SearchItems>
 
     private void OnSearchChanged(SearchChangedEventArgs e)
     {
-        this.searchText.Value = e.SearchTerm;
         this.searchExpression.Value = e.SearchExpression;
-        if (this.searchBar.Value is null || !this.isActive.Value || this.menuHandler.CurrentMenu is not ItemGrabMenu)
+        if (!this.isActive.Value || this.menuHandler.CurrentMenu is not ItemGrabMenu)
         {
             return;
         }
 
-        this.searchBar.Value.Reset();
+        this.searchBar.Value.Value = e.SearchTerm;
     }
 }

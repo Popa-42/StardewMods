@@ -154,7 +154,8 @@ internal sealed class TabMenu : SearchMenu
             }
 
             this.activeTab = tabIcon;
-            this.SetSearchText(tabData.SearchTerm, true);
+            this.SearchText = tabData.SearchTerm;
+            this.UpdateExpression();
         }
     }
 
@@ -187,7 +188,8 @@ internal sealed class TabMenu : SearchMenu
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
-            this.SetSearchText(searchText, true);
+            this.SearchText = searchText;
+            this.UpdateExpression();
             return true;
         }
 
@@ -271,7 +273,8 @@ internal sealed class TabMenu : SearchMenu
         }
 
         Game1.playSound("drumkit6");
-        this.SetSearchText(tabEditor.Data.SearchTerm, true);
+        this.SearchText = tabEditor.Data.SearchTerm;
+        this.UpdateExpression();
         if (this.activeTab is not null)
         {
             this.activeTab.Active = false;

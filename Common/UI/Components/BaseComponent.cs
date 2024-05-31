@@ -24,8 +24,6 @@ using StardewValley.Menus;
 /// <summary>Base custom component.</summary>
 internal abstract class BaseComponent : ClickableComponent, ICustomComponent
 {
-    private readonly List<ICustomComponent> components = [];
-
     private float baseScale;
     private EventHandler<UiEventArgs>? clicked;
     private EventHandler<CursorEventArgs>? cursorOut;
@@ -43,10 +41,8 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <param name="height">The component height.</param>
     /// <param name="name">The component name.</param>
     protected BaseComponent(int x, int y, int width, int height, string name)
-        : base(new Rectangle(x, y, width, height), name)
-    {
-        // Do nothing
-    }
+        : base(new Rectangle(x, y, width, height), name) =>
+        this.Components = new ComponentList(this);
 
     /// <inheritdoc />
     public event EventHandler<UiEventArgs> Clicked
@@ -56,21 +52,21 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     }
 
     /// <inheritdoc />
-    public event EventHandler<CursorEventArgs>? CursorOut
+    public event EventHandler<CursorEventArgs> CursorOut
     {
         add => this.cursorOut += value;
         remove => this.cursorOut -= value;
     }
 
     /// <inheritdoc />
-    public event EventHandler<CursorEventArgs>? CursorOver
+    public event EventHandler<CursorEventArgs> CursorOver
     {
         add => this.cursorOver += value;
         remove => this.cursorOver -= value;
     }
 
     /// <inheritdoc />
-    public event EventHandler<RenderEventArgs>? Rendering
+    public event EventHandler<RenderEventArgs> Rendering
     {
         add => this.rendering += value;
         remove => this.rendering -= value;
@@ -80,7 +76,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     public Rectangle Bounds => this.bounds;
 
     /// <inheritdoc />
-    public IReadOnlyList<ICustomComponent> Components => this.components;
+    public ComponentList Components { get; }
 
     /// <inheritdoc />
     public float BaseScale
@@ -173,14 +169,6 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     }
 
     /// <inheritdoc />
-    public ICustomComponent AddComponent(ICustomComponent component)
-    {
-        this.components.Add(component);
-        component.Parent = this;
-        return this;
-    }
-
-    /// <inheritdoc />
     public virtual void Draw(SpriteBatch spriteBatch, Point cursor)
     {
         if (!this.IsVisible)
@@ -208,7 +196,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             IClickableMenu.drawToolTip(spriteBatch, this.HoverText, null, null);
         }
 
-        foreach (var component in this.components)
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.DrawOver(spriteBatch, cursor);
         }
@@ -235,7 +223,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             false,
             0.97f);
 
-        foreach (var component in this.components)
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.DrawUnder(spriteBatch, cursor);
         }
@@ -250,7 +238,9 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         }
 
         // Left-click components
-        foreach (var component in this.components.Where(component => component.TryLeftClick(cursor)))
+        foreach (var component in this
+            .Components.OfType<ICustomComponent>()
+            .Where(component => component.TryLeftClick(cursor)))
         {
             this.clicked.InvokeAll(component, new UiEventArgs(SButton.MouseLeft, cursor));
             return true;
@@ -269,7 +259,9 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         }
 
         // Right-click components
-        foreach (var component in this.components.Where(component => component.TryRightClick(cursor)))
+        foreach (var component in this
+            .Components.OfType<ICustomComponent>()
+            .Where(component => component.TryRightClick(cursor)))
         {
             this.clicked.InvokeAll(component, new UiEventArgs(SButton.Right, cursor));
             return true;
@@ -290,7 +282,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return;
         }
 
-        foreach (var component in this.components)
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.Update(cursor);
         }
@@ -304,15 +296,12 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         (this.isHovered ? this.cursorOver : this.cursorOut)?.Invoke(this, new CursorEventArgs(cursor));
     }
 
-    /// <summary>Clears the components.</summary>
-    protected void ClearComponents() => this.components.Clear();
-
     /// <summary>Draws the component in a framed area.</summary>
     /// <param name="spriteBatch">The sprite batch to draw the component to.</param>
     /// <param name="cursor">The mouse position.</param>
     protected virtual void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
     {
-        foreach (var component in this.components)
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.Draw(spriteBatch, cursor);
         }

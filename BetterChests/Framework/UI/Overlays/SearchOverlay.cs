@@ -18,13 +18,12 @@ internal sealed class SearchOverlay : BaseMenu
         var searchBarWidth = Math.Min(12 * Game1.tileSize, Game1.uiViewport.Width);
         var origin = Utility.getTopLeftPositionForCenteringOnScreen(searchBarWidth, 48);
 
-        this.textField =
-            new TextField((int)origin.X, Game1.tileSize, searchBarWidth, getMethod, setMethod)
-            {
-                Selected = true,
-            };
+        this.textField = new TextField((int)origin.X, Game1.tileSize, searchBarWidth, string.Empty)
+        {
+            Selected = true,
+        };
 
-        this.allClickableComponents.Add(this.textField);
+        this.Components.Add(this.textField);
     }
 
     /// <inheritdoc />
