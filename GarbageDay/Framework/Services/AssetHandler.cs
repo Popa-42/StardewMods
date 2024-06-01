@@ -41,7 +41,7 @@ internal sealed class AssetHandler : BaseAssetHandler
         IModContentHelper modContentHelper)
         : base(contentPatcherIntegration, eventManager, gameContentHelper, modContentHelper)
     {
-        // Init
+        // Initialize
         this.foundGarbageCans = foundGarbageCans;
         this.modConfig = modConfig;
 

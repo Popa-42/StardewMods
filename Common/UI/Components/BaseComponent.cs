@@ -33,6 +33,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     private Point offset;
     private Point overflow;
     private EventHandler<RenderEventArgs>? rendering;
+    private EventHandler<ScrolledEventArgs>? scrolled;
 
     /// <summary>Initializes a new instance of the <see cref="BaseComponent" /> class.</summary>
     /// <param name="x">The component x-coordinate.</param>
@@ -70,6 +71,13 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     {
         add => this.rendering += value;
         remove => this.rendering -= value;
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<ScrolledEventArgs> Scrolled
+    {
+        add => this.scrolled += value;
+        remove => this.scrolled -= value;
     }
 
     /// <inheritdoc />
@@ -120,7 +128,11 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     public virtual Point Location
     {
         get => this.bounds.Location;
-        set => this.bounds.Location = value;
+        set
+        {
+            this.RepositionComponents(value);
+            this.bounds.Location = value;
+        }
     }
 
     /// <inheritdoc />
@@ -165,7 +177,11 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     public virtual Point Size
     {
         get => this.bounds.Size;
-        set => this.bounds.Size = value;
+        set
+        {
+            this.RepositionComponents(this.bounds.Location);
+            this.bounds.Size = value;
+        }
     }
 
     /// <inheritdoc />
@@ -176,7 +192,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return;
         }
 
-        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch));
+        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch, cursor));
         UiToolkit.DrawInFrame(
             spriteBatch,
             new Rectangle(this.bounds.X, this.bounds.Y, this.bounds.Width, this.bounds.Height),
@@ -209,19 +225,6 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         {
             return;
         }
-
-        IClickableMenu.drawTextureBox(
-            spriteBatch,
-            Game1.mouseCursors,
-            OptionsDropDown.dropDownBGSource,
-            this.bounds.X,
-            this.bounds.Y,
-            this.bounds.Width,
-            this.bounds.Height,
-            Color.White,
-            Game1.pixelZoom,
-            false,
-            0.97f);
 
         foreach (var component in this.Components.OfType<ICustomComponent>())
         {
@@ -272,7 +275,16 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     }
 
     /// <inheritdoc />
-    public virtual bool TryScroll(Point cursor, int direction) => false;
+    public virtual bool TryScroll(Point cursor, int direction)
+    {
+        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
+        {
+            return false;
+        }
+
+        this.scrolled?.InvokeAll(this, new ScrolledEventArgs(cursor, direction));
+        return false;
+    }
 
     /// <inheritdoc />
     public virtual void Update(Point cursor)
@@ -304,6 +316,30 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.Draw(spriteBatch, cursor);
+        }
+    }
+
+    /// <summary>Reposition components when bounds changes.</summary>
+    /// <param name="newLocation">The new origin.</param>
+    protected virtual void RepositionComponents(Point newLocation)
+    {
+        var delta = newLocation - this.bounds.Location;
+        if (delta.Equals(Point.Zero))
+        {
+            return;
+        }
+
+        foreach (var component in this.Components)
+        {
+            switch (component)
+            {
+                case ICustomComponent customComponent:
+                    customComponent.Location += delta;
+                    break;
+                default:
+                    component.bounds.Location += delta;
+                    break;
+            }
         }
     }
 }

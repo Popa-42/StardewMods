@@ -1,13 +1,10 @@
-namespace StardewMods.BetterChests.Framework.UI.Menus;
+namespace StardewMods.BetterChests.Framework.UI.Components;
 
 using System.Collections.Immutable;
 using System.Globalization;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services;
-using StardewMods.BetterChests.Framework.UI.Components;
 using StardewMods.Common.Enums;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
@@ -15,87 +12,79 @@ using StardewMods.Common.UI.Components;
 using StardewMods.Common.UI.Menus;
 using StardewValley.Menus;
 
-/// <summary>A sub-menu for editing an <see cref="IExpression" />.</summary>
-internal sealed class ExpressionsMenu : BaseMenu
+/// <summary>Component for editing expressions.</summary>
+internal sealed class ExpressionsEditor : BaseComponent
 {
     private readonly IExpressionHandler expressionHandler;
-    private readonly Func<string> getSearchText;
     private readonly IIconRegistry iconRegistry;
-    private readonly Action<string> setSearchText;
 
-    private ExpressionGroup? baseComponent;
+    private EventHandler<IExpression?>? expressionsChanged;
 
-    /// <summary>Initializes a new instance of the <see cref="ExpressionsMenu" /> class.</summary>
+    private ExpressionGroup? rootComponent;
+
+    /// <summary>Initializes a new instance of the <see cref="ExpressionsEditor" /> class.</summary>
     /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
-    /// <param name="getSearchText">A function that gets the current search text.</param>
-    /// <param name="setSearchText">An action that sets the current search text.</param>
-    /// <param name="xPosition">The x-position of the menu.</param>
-    /// <param name="yPosition">The y-position of the menu.</param>
-    /// <param name="width">The width of the menu.</param>
-    /// <param name="height">The height of the menu.</param>
-    public ExpressionsMenu(
+    /// <param name="x">The component x-coordinate.</param>
+    /// <param name="y">The component y-coordinate.</param>
+    /// <param name="width">The component width.</param>
+    /// <param name="height">The component height.</param>
+    public ExpressionsEditor(
         IExpressionHandler expressionHandler,
         IIconRegistry iconRegistry,
-        Func<string> getSearchText,
-        Action<string> setSearchText,
-        int xPosition,
-        int yPosition,
+        int x,
+        int y,
         int width,
         int height)
-        : base(xPosition, yPosition, width, height)
+        : base(x, y, width, height, "expressions")
     {
         this.expressionHandler = expressionHandler;
         this.iconRegistry = iconRegistry;
-        this.getSearchText = getSearchText;
-        this.setSearchText = setSearchText;
     }
 
-    private string SearchText
+    /// <summary>Event raised when the expressions change.</summary>
+    public event EventHandler<IExpression?> ExpressionsChanged
     {
-        get => this.getSearchText();
-        set => this.setSearchText(value);
+        add => this.expressionsChanged += value;
+        remove => this.expressionsChanged -= value;
     }
 
-    /// <summary>Re-initializes the components of the object with the given initialization expression.</summary>
-    /// <param name="initExpression">The initial expression, or null to clear.</param>
-    public void ReInitializeComponents(IExpression? initExpression)
+    /// <summary>Reinitialize components based on a new root expression.</summary>
+    /// <param name="expression">The root expression.</param>
+    public void ReinitializeComponents(IExpression? expression)
     {
-        this.allClickableComponents.Clear();
-        if (initExpression is null)
+        this.Components.Clear();
+        if (expression is null)
         {
             return;
         }
 
-        this.baseComponent = new ExpressionGroup(
+        this.rootComponent = new ExpressionGroup(
             this.iconRegistry,
             this.Bounds.X,
             this.Bounds.Y,
             this.Bounds.Width,
-            initExpression,
+            expression,
             -1);
 
-        this.baseComponent.ExpressionChanged += this.OnExpressionChanged;
-        this.allClickableComponents.Add(this.baseComponent);
+        this.rootComponent.ExpressionChanged += this.OnExpressionChanged;
 
-        // this.SetMaxOffset(
-        //     new Point(-1, Math.Max(0, this.baseComponent.bounds.Bottom - this.Bounds.Height - this.Bounds.Y)));
+        this.Components.Add(this.rootComponent);
     }
 
-    /// <inheritdoc />
-    protected override void DrawUnder(SpriteBatch b, Point cursor) { }
-
-    private void Add(IExpression toAddTo, ExpressionType expressionType)
+    private void AddExpression(IExpression toAddTo, ExpressionType expressionType)
     {
-        if (this.baseComponent is null || !this.expressionHandler.TryCreateExpression(expressionType, out var newChild))
+        if (this.rootComponent is null
+            || !this.expressionHandler.TryCreateExpression(expressionType, out var newExpression))
         {
+            this.expressionsChanged?.InvokeAll(this, null);
             return;
         }
 
         var newChildren = GetChildren().ToImmutableList();
         toAddTo.Expressions = newChildren;
-        this.SearchText = this.baseComponent.Expression.Text;
-        this.ReInitializeComponents(this.baseComponent.Expression);
+        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 
         IEnumerable<IExpression> GetChildren()
@@ -105,40 +94,40 @@ internal sealed class ExpressionsMenu : BaseMenu
                 yield return child;
             }
 
-            yield return newChild;
+            yield return newExpression;
         }
     }
 
-    private void ChangeAttribute(IExpression toChange, string value)
+    private void ChangeAttribute(IExpression toChange, string newValue)
     {
-        if (string.IsNullOrWhiteSpace(value) || !ItemAttributeExtensions.TryParse(value, out var attribute))
+        if (string.IsNullOrWhiteSpace(newValue) || !ItemAttributeExtensions.TryParse(newValue, out var newAttribute))
         {
             return;
         }
 
         var dynamicTerm = toChange.Expressions.ElementAtOrDefault(0);
-        if (this.baseComponent?.Expression is null || dynamicTerm?.ExpressionType is not ExpressionType.Dynamic)
+        if (this.rootComponent?.Expression is null || dynamicTerm?.ExpressionType is not ExpressionType.Dynamic)
         {
             return;
         }
 
-        dynamicTerm.Term = attribute.ToStringFast();
-        this.SearchText = this.baseComponent.Expression.Text;
-        this.ReInitializeComponents(this.baseComponent.Expression);
+        dynamicTerm.Term = newAttribute.ToStringFast();
+        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
     }
 
-    private void ChangeTerm(IExpression toChange, string term)
+    private void ChangeValue(IExpression toChange, string newValue)
     {
         var staticTerm = toChange.Expressions.ElementAtOrDefault(1);
-        if (this.baseComponent?.Expression is null
+        if (this.rootComponent?.Expression is null
             || staticTerm?.ExpressionType is not (ExpressionType.Quoted or ExpressionType.Static))
         {
             return;
         }
 
-        staticTerm.Term = term;
-        this.SearchText = this.baseComponent.Expression.Text;
-        this.ReInitializeComponents(this.baseComponent.Expression);
+        staticTerm.Term = newValue;
+        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
     }
 
     private void OnExpressionChanged(object? sender, ExpressionChangedEventArgs e)
@@ -146,13 +135,13 @@ internal sealed class ExpressionsMenu : BaseMenu
         switch (e.Change)
         {
             case ExpressionChange.AddGroup:
-                this.Add(e.Expression, ExpressionType.All);
+                this.AddExpression(e.Expression, ExpressionType.All);
                 break;
             case ExpressionChange.AddNot:
-                this.Add(e.Expression, ExpressionType.Not);
+                this.AddExpression(e.Expression, ExpressionType.Not);
                 break;
             case ExpressionChange.AddTerm:
-                this.Add(e.Expression, ExpressionType.Comparable);
+                this.AddExpression(e.Expression, ExpressionType.Comparable);
                 break;
             case ExpressionChange.ChangeAttribute when sender is ButtonComponent component:
                 this.ShowDropdown(e.Expression, component);
@@ -161,7 +150,7 @@ internal sealed class ExpressionsMenu : BaseMenu
                 this.ShowPopup(e.Expression, component);
                 break;
             case ExpressionChange.Remove:
-                this.Remove(e.Expression);
+                this.RemoveExpression(e.Expression);
                 break;
             case ExpressionChange.ToggleGroup:
                 this.ToggleGroup(e.Expression);
@@ -169,17 +158,17 @@ internal sealed class ExpressionsMenu : BaseMenu
         }
     }
 
-    private void Remove(IExpression toRemove)
+    private void RemoveExpression(IExpression toRemove)
     {
-        if (this.baseComponent?.Expression is null || toRemove.Parent is null)
+        if (this.rootComponent?.Expression is null || toRemove.Parent is null)
         {
             return;
         }
 
         var newChildren = GetChildren().ToImmutableList();
         toRemove.Parent.Expressions = newChildren;
-        this.SearchText = this.baseComponent.Expression.Text;
-        this.ReInitializeComponents(this.baseComponent.Expression);
+        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 
         IEnumerable<IExpression> GetChildren()
@@ -203,7 +192,7 @@ internal sealed class ExpressionsMenu : BaseMenu
 
         dropdown.OptionSelected += (_, attribute) => this.ChangeAttribute(expression, attribute.ToStringFast());
 
-        //this.Parent?.SetChildMenu(dropdown);
+        this.Menu?.SetChildMenu(dropdown);
     }
 
     private void ShowPopup(IExpression expression, ClickableComponent component)
@@ -232,11 +221,11 @@ internal sealed class ExpressionsMenu : BaseMenu
         {
             if (option is not null)
             {
-                this.ChangeTerm(expression, option);
+                this.ChangeValue(expression, option);
             }
         };
 
-        //this.Parent?.SetChildMenu(popupSelect);
+        this.Menu?.SetChildMenu(popupSelect);
     }
 
     private void ToggleGroup(IExpression toToggle)
@@ -248,7 +237,7 @@ internal sealed class ExpressionsMenu : BaseMenu
             _ => ExpressionType.All,
         };
 
-        if (this.baseComponent?.Expression is null
+        if (this.rootComponent?.Expression is null
             || toToggle.Parent is null
             || !this.expressionHandler.TryCreateExpression(expressionType, out var newChild))
         {
@@ -257,8 +246,8 @@ internal sealed class ExpressionsMenu : BaseMenu
 
         var newChildren = GetChildren().ToImmutableList();
         toToggle.Parent.Expressions = newChildren;
-        this.SearchText = this.baseComponent.Expression.Text;
-        this.ReInitializeComponents(this.baseComponent.Expression);
+        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 
         IEnumerable<IExpression> GetChildren()

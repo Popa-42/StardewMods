@@ -9,7 +9,7 @@ public sealed class ModEntry : StardewModdingAPI.Mod
     /// <inheritdoc />
     public override void Entry(IModHelper helper)
     {
-        // Init
+        // Initialize
         I18n.Init(this.Helper.Translation);
         Log.Monitor = this.Monitor;
         ModPatches.Init(this.ModManifest);

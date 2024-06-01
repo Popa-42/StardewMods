@@ -30,7 +30,7 @@ internal sealed class DispenseService : BaseService<DispenseService>
         IModConfig modConfig,
         ToolbarIconsIntegration toolbarIconsIntegration)
     {
-        // Init
+        // Initialize
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;
         this.modConfig = modConfig;

@@ -1,14 +1,16 @@
 #if IS_FAUXCORE
-namespace StardewMods.FauxCore.Common.UI.Components;
+namespace StardewMods.FauxCore.Common.UI;
 
 using Microsoft.Xna.Framework;
+using StardewMods.FauxCore.Common.UI.Components;
 using StardewMods.FauxCore.Common.UI.Menus;
 using StardewValley.Menus;
 
 #else
-namespace StardewMods.Common.UI.Components;
+namespace StardewMods.Common.UI;
 
 using Microsoft.Xna.Framework;
+using StardewMods.Common.UI.Components;
 using StardewMods.Common.UI.Menus;
 using StardewValley.Menus;
 #endif

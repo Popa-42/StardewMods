@@ -19,7 +19,7 @@ public sealed class ExpandedStorageApi : IExpandedStorageApi
     /// <param name="storageDataFactory">Dependency used for managing storage data.</param>
     internal ExpandedStorageApi(IEventManager eventManager, IModInfo modInfo, StorageDataFactory storageDataFactory)
     {
-        // Init
+        // Initialize
         this.modInfo = modInfo;
         this.storageDataFactory = storageDataFactory;
         this.eventManager = new BaseEventManager();

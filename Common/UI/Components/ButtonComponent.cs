@@ -57,7 +57,7 @@ internal sealed class ButtonComponent : BaseComponent
                 Game1.smallFont,
                 this.label,
                 new Vector2(this.bounds.X + this.Offset.X + 8, this.bounds.Y + this.Offset.Y + 2),
-                Game1.textColor,
+                this.TextColor,
                 0f,
                 Vector2.Zero,
                 1f,

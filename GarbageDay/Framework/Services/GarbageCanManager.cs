@@ -45,7 +45,7 @@ internal sealed class GarbageCanManager : BaseService<GarbageCanManager>
         IReflectionHelper reflectionHelper,
         ToolbarIconsIntegration toolbarIconsIntegration)
     {
-        // Init
+        // Initialize
         this.foundGarbageCans = foundGarbageCans;
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;

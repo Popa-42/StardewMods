@@ -28,7 +28,7 @@ internal sealed class ProxyChestFactory : BaseService<ProxyChestFactory>
     /// <param name="patchManager">Dependency used for managing patches.</param>
     public ProxyChestFactory(IPatchManager patchManager)
     {
-        // Init
+        // Initialize
         ProxyChestFactory.instance = this;
 
         // Patches

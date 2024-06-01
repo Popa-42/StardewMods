@@ -33,7 +33,7 @@ internal sealed class IntegrationManager
         IReflectionHelper reflectionHelper,
         ToolbarManager toolbarManager)
     {
-        // Init
+        // Initialize
         this.customIntegrations = customIntegrations;
         this.modRegistry = modRegistry;
         this.reflectionHelper = reflectionHelper;

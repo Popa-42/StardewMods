@@ -40,7 +40,7 @@ internal sealed class MenuManager
         MenuHandler menuHandler,
         IModConfig modConfig)
     {
-        // Init
+        // Initialize
         this.eventManager = eventManager;
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;

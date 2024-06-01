@@ -50,7 +50,7 @@ internal sealed class ModPatches
         IPatchManager patchManager,
         IReflectionHelper reflectionHelper)
     {
-        // Init
+        // Initialize
         ModPatches.instance = this;
         this.modDataId = Mod.Id + "/Id";
         this.modDataItem = Mod.Id + "/ShakeOff";

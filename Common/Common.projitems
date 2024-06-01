@@ -111,10 +111,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Services\EventManager.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Services\Log.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Services\UiToolkit.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ComponentBuilder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\ComponentList.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\BaseComponent.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ButtonComponent.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ComponentBuilder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\IconSelector.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\OptionSelector.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\TextField.cs"/>

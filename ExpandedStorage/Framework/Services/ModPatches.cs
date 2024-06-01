@@ -41,7 +41,7 @@ internal sealed class ModPatches
         IPatchManager patchManager,
         StorageDataFactory storageDataFactory)
     {
-        // Init
+        // Initialize
         ModPatches.assetHandler = assetHandler;
         ModPatches.eventManager = eventManager;
         ModPatches.storageDataFactory = storageDataFactory;

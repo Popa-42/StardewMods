@@ -4,7 +4,6 @@ namespace StardewMods.FauxCore.Common.UI.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
-using StardewMods.FauxCore.Common.Models.Events;
 using StardewMods.FauxCore.Common.Services;
 using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
@@ -15,7 +14,6 @@ namespace StardewMods.Common.UI.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
-using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewValley.Menus;
@@ -28,9 +26,8 @@ internal sealed class VerticalScrollBar : BaseComponent
     private readonly TextureComponent arrowUp;
     private readonly TextureComponent grabber;
     private Rectangle runner;
-    private EventHandler<ScrolledEventArgs>? scrolled;
-
     private float value;
+    private EventHandler<float>? valueChanged;
 
     /// <summary>Initializes a new instance of the <see cref="VerticalScrollBar" /> class.</summary>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
@@ -91,11 +88,11 @@ internal sealed class VerticalScrollBar : BaseComponent
         this.grabber.Clicked += (_, _) => this.IsActive = true;
     }
 
-    /// <summary>Event raised when the scrollbar is scrolled.</summary>
-    public event EventHandler<ScrolledEventArgs> Scrolled
+    /// <summary>Event raised when the scroll value changes.</summary>
+    public event EventHandler<float> ValueChanged
     {
-        add => this.scrolled += value;
-        remove => this.scrolled -= value;
+        add => this.valueChanged += value;
+        remove => this.valueChanged -= value;
     }
 
     /// <summary>Gets a value indicating whether the scroll bar is currently active.</summary>
@@ -156,6 +153,7 @@ internal sealed class VerticalScrollBar : BaseComponent
 
             this.arrowUp.Color = this.value > 0 ? Color.White : Color.Black * 0.35f;
             this.arrowDown.Color = this.value < 1 ? Color.White : Color.Black * 0.35f;
+            this.valueChanged?.InvokeAll(this, this.value);
         }
     }
 
@@ -199,7 +197,8 @@ internal sealed class VerticalScrollBar : BaseComponent
     public override bool TryScroll(Point cursor, int direction)
     {
         var initialValue = this.Value;
-        if (!base.TryScroll(cursor, direction) || Math.Abs(this.Value - initialValue) < 0.001f)
+        _ = base.TryScroll(cursor, direction);
+        if (Math.Abs(this.Value - initialValue) < 0.001f)
         {
             return false;
         }

@@ -30,7 +30,7 @@ internal abstract class Mod : StardewModdingAPI.Mod
     /// <inheritdoc />
     public sealed override void Entry(IModHelper helper)
     {
-        // Init
+        // Initialize
         Mod.instance = this;
         this.container = new Container();
 

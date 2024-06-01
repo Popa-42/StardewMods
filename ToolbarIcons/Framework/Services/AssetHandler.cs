@@ -44,7 +44,7 @@ internal sealed class AssetHandler : BaseAssetHandler
         IThemeHelper themeHelper)
         : base(contentPatcherIntegration, eventManager, gameContentHelper, modContentHelper)
     {
-        // Init
+        // Initialize
         this.iconRegistry = iconRegistry;
         this.integrationManager = integrationManager;
         this

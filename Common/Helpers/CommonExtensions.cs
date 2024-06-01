@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework;
 using StardewMods.FauxCore.Common.Models;
 using StardewMods.FauxCore.Common.Services.Integrations.BetterChests;
 using StardewMods.FauxCore.Common.UI;
-using StardewMods.FauxCore.Common.UI.Components;
 using StardewValley.Menus;
 using StardewValley.Mods;
 
@@ -16,7 +15,6 @@ using Microsoft.Xna.Framework;
 using StardewMods.Common.Models;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.UI;
-using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
 using StardewValley.Mods;
 #endif

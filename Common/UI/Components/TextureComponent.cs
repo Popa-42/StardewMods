@@ -28,6 +28,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     private bool isHovered;
     private BaseMenu? menu;
     private EventHandler<RenderEventArgs>? rendering;
+    private EventHandler<ScrolledEventArgs>? scrolled;
 
     /// <summary>Initializes a new instance of the <see cref="TextureComponent" /> class.</summary>
     /// <param name="name">The component name.</param>
@@ -65,6 +66,13 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     {
         add => this.rendering += value;
         remove => this.rendering -= value;
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<ScrolledEventArgs> Scrolled
+    {
+        add => this.scrolled += value;
+        remove => this.scrolled -= value;
     }
 
     /// <inheritdoc />
@@ -168,8 +176,8 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
             return;
         }
 
-        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch));
-        this.draw(spriteBatch, Color.White, 1f, 0, this.Offset.X, this.Offset.Y);
+        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch, cursor));
+        this.draw(spriteBatch, this.Color, 1f, 0, this.Offset.X, this.Offset.Y);
     }
 
     /// <inheritdoc />

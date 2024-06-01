@@ -3,6 +3,7 @@ namespace StardewMods.BetterChests.Framework.UI.Menus;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using StardewMods.BetterChests.Framework.UI.Components;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
@@ -12,9 +13,10 @@ using StardewValley.Menus;
 /// <summary>A menu for editing search.</summary>
 internal class SearchMenu : BaseMenu
 {
-    private readonly ExpressionsMenu expressionEditor;
+    private readonly ExpressionsEditor expressionEditor;
     private readonly IExpressionHandler expressionHandler;
     private readonly InventoryMenu inventory;
+    private readonly VerticalScrollBar scrollExpressions;
     private readonly VerticalScrollBar scrollInventory;
     private readonly TextField textField;
 
@@ -28,36 +30,26 @@ internal class SearchMenu : BaseMenu
     /// <param name="initialValue">The initial search text.</param>
     public SearchMenu(IExpressionHandler expressionHandler, IIconRegistry iconRegistry, string initialValue)
     {
+        // Initialize
         this.expressionHandler = expressionHandler;
 
-        // this.expressionEditor = new ExpressionEditor(
-        //     this.expressionHandler,
-        //     iconRegistry,
-        //     inputHelper,
-        //     reflectionHelper,
-        //     () => this.SearchText!,
-        //     value => this.SetSearchText(value),
-        //     this.xPositionOnScreen + IClickableMenu.borderWidth,
-        //     this.yPositionOnScreen
-        //     + IClickableMenu.spaceToClearSideBorder
-        //     + (IClickableMenu.borderWidth / 2)
-        //     + (Game1.tileSize * 2)
-        //     + 12,
-        //     340,
-        //     448);
-        this.expressionEditor = new ExpressionsMenu(
+        this.expressionEditor = new ExpressionsEditor(
             this.expressionHandler,
             iconRegistry,
-            () => this.SearchText,
-            value => this.SearchText = value,
             this.xPositionOnScreen + IClickableMenu.borderWidth,
             this.yPositionOnScreen
             + IClickableMenu.spaceToClearSideBorder
             + (IClickableMenu.borderWidth / 2)
             + (Game1.tileSize * 2)
             + 12,
-            388,
+            340,
             448);
+
+        this.scrollExpressions = new VerticalScrollBar(
+            iconRegistry,
+            this.expressionEditor.Bounds.X + this.expressionEditor.Bounds.Width + 4,
+            this.expressionEditor.Bounds.Y + 4,
+            this.expressionEditor.Bounds.Height);
 
         this.inventory = new InventoryMenu(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2) + 428,
@@ -85,24 +77,41 @@ internal class SearchMenu : BaseMenu
             + (IClickableMenu.borderWidth / 2)
             + Game1.tileSize,
             this.width - (IClickableMenu.spaceToClearSideBorder * 2) - IClickableMenu.borderWidth,
-            this.SearchText);
+            initialValue);
+
+        // Events
+        this.expressionEditor.ExpressionsChanged += (_, expression) =>
+        {
+            if (!string.IsNullOrWhiteSpace(expression?.Text))
+            {
+                this.SearchText = expression.Text;
+            }
+        };
+
+        this.scrollInventory.ValueChanged += (_, value) =>
+        {
+            // offset inventory
+        };
 
         this.textField.ValueChanged += (_, _) => this.UpdateExpression();
 
+        // Add components
+        this.Components.Add(this.expressionEditor);
         this.Components.Add(this.textField);
+        this.Components.Add(this.scrollExpressions);
         this.Components.Add(this.scrollInventory);
         this.UpdateExpression();
     }
 
-    /// <summary>Gets or sets the current search text.</summary>
-    public string SearchText
-    {
-        get => this.textField.Value;
-        protected set => this.textField.Value = value;
-    }
-
     /// <summary>Gets the current search expression.</summary>
     protected IExpression? Expression { get; private set; }
+
+    /// <summary>Gets or sets the current search text.</summary>
+    protected string SearchText
+    {
+        get => this.textField.Value;
+        set => this.textField.Value = value;
+    }
 
     /// <inheritdoc />
     public override void receiveKeyPress(Keys key)
@@ -188,6 +197,6 @@ internal class SearchMenu : BaseMenu
             ? expression
             : null;
 
-        this.expressionEditor.ReInitializeComponents(this.Expression);
+        this.expressionEditor.ReinitializeComponents(this.Expression);
     }
 }

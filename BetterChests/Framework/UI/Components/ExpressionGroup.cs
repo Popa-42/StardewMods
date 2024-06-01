@@ -6,24 +6,18 @@ using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services;
 using StardewMods.Common.Helpers;
+using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI;
 using StardewMods.Common.UI.Components;
-using StardewValley.Menus;
 
 /// <inheritdoc />
-internal sealed class ExpressionGroup : ExpressionEditor
+internal sealed class ExpressionGroup : ExpressionComponent
 {
-    private readonly List<ICustomComponent> components = [];
-    private readonly IIconRegistry iconRegistry;
-    private readonly ICustomComponent mainComponent;
-    private readonly ClickableTextureComponent removeButton;
-
     private EventHandler<ExpressionChangedEventArgs>? expressionChanged;
 
     /// <summary>Initializes a new instance of the <see cref="ExpressionGroup" /> class.</summary>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
-    /// <param name="parent">The parent menu.</param>
     /// <param name="x">The component x-coordinate.</param>
     /// <param name="y">The component y-coordinate.</param>
     /// <param name="width">The component width.</param>
@@ -32,43 +26,38 @@ internal sealed class ExpressionGroup : ExpressionEditor
     public ExpressionGroup(IIconRegistry iconRegistry, int x, int y, int width, IExpression expression, int level)
         : base(x, y, width, level >= 0 ? 52 : 0, expression, level)
     {
-        this.iconRegistry = iconRegistry;
         var indent = this.Level >= 0 ? 12 : 0;
-
-        this.removeButton = iconRegistry
-            .Icon(VanillaIcon.DoNot)
-            .Component(IconStyle.Transparent, "remove", 2f)
-            .AsBuilder()
-            .Location(new Point(x + width - 36, y + 12))
-            .HoverText(I18n.Ui_Remove_Tooltip())
-            .Value;
-
-        var toggleButton = new ButtonComponent(
-            x + 8,
-            y + 8,
-            0,
-            32,
-            "toggle",
-            Localized.ExpressionName(expression.ExpressionType))
-        {
-            HoverText = Localized.ExpressionTooltip(expression.ExpressionType),
-        };
 
         if (this.Level >= 0)
         {
-            this.components.Add(toggleButton);
+            var toggleButton = new ButtonComponent(
+                x + 8,
+                y + 8,
+                0,
+                32,
+                "toggle",
+                Localized.ExpressionName(expression.ExpressionType))
+            {
+                HoverText = Localized.ExpressionTooltip(expression.ExpressionType),
+            };
+
+            if (expression.ExpressionType is ExpressionType.All or ExpressionType.Any)
+            {
+                toggleButton.Rendering += this.UpdateColor;
+                toggleButton.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
+                    this,
+                    new ExpressionChangedEventArgs(ExpressionChange.ToggleGroup, this.Expression));
+            }
+
+            this.Components.Add(toggleButton);
         }
 
         switch (expression.ExpressionType)
         {
             case ExpressionType.All or ExpressionType.Any:
-                toggleButton.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
-                    this,
-                    new ExpressionChangedEventArgs(ExpressionChange.ToggleGroup, this.Expression));
-
                 foreach (var subExpression in expression.Expressions)
                 {
-                    this.AddSubExpression(subExpression);
+                    AddSubExpression(subExpression);
                 }
 
                 break;
@@ -80,15 +69,7 @@ internal sealed class ExpressionGroup : ExpressionEditor
                     break;
                 }
 
-                this.AddSubExpression(innerExpression);
-                this.mainComponent = new ButtonComponent(
-                    this.bounds.X,
-                    this.bounds.Y,
-                    this.bounds.Width,
-                    this.bounds.Height,
-                    "main",
-                    string.Empty);
-
+                AddSubExpression(innerExpression);
                 return;
         }
 
@@ -104,11 +85,12 @@ internal sealed class ExpressionGroup : ExpressionEditor
             HoverText = I18n.Ui_AddTerm_Tooltip(),
         };
 
+        addTerm.Rendering += this.UpdateColor;
         addTerm.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.AddTerm, this.Expression));
 
-        this.components.Add(addTerm);
+        this.Components.Add(addTerm);
 
         subWidth = (int)Game1.smallFont.MeasureString(I18n.Ui_AddGroup_Name()).X + 20;
         var addGroup = new ButtonComponent(
@@ -122,11 +104,12 @@ internal sealed class ExpressionGroup : ExpressionEditor
             HoverText = I18n.Ui_AddGroup_Tooltip(),
         };
 
+        addGroup.Rendering += this.UpdateColor;
         addGroup.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.AddGroup, this.Expression));
 
-        this.components.Add(addGroup);
+        this.Components.Add(addGroup);
 
         if (expression.ExpressionType is not ExpressionType.Not)
         {
@@ -142,53 +125,73 @@ internal sealed class ExpressionGroup : ExpressionEditor
                 HoverText = I18n.Ui_AddNot_Tooltip(),
             };
 
+            addNot.Rendering += this.UpdateColor;
             addNot.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
                 this,
                 new ExpressionChangedEventArgs(ExpressionChange.AddNot, this.Expression));
 
-            this.components.Add(addNot);
+            this.Components.Add(addNot);
         }
 
         this.bounds.Height = addTerm.Bounds.Bottom - this.bounds.Top + 12;
-        this.mainComponent = new ButtonComponent(
-            this.bounds.X,
-            this.bounds.Y,
-            this.bounds.Width,
-            this.bounds.Height,
-            "main",
-            string.Empty);
+
+        if (level >= 0)
+        {
+            var removeButton = iconRegistry
+                .Icon(VanillaIcon.DoNot)
+                .Component(IconStyle.Transparent, "remove", 2f)
+                .AsBuilder()
+                .Location(new Point(x + width - 36, y + 12))
+                .HoverText(I18n.Ui_Remove_Tooltip())
+                .Value;
+
+            removeButton.Clicked += this.RemoveExpression;
+
+            this.Components.Add(removeButton);
+        }
+
+        return;
+
+        void AddSubExpression(IExpression subExpression)
+        {
+            ExpressionComponent component;
+            switch (subExpression.ExpressionType)
+            {
+                case ExpressionType.All or ExpressionType.Any or ExpressionType.Not:
+                    var expressionGroup = new ExpressionGroup(
+                        iconRegistry,
+                        this.bounds.X + indent,
+                        this.bounds.Bottom,
+                        this.bounds.Width - (indent * 2),
+                        subExpression,
+                        this.Level + 1);
+
+                    component = expressionGroup;
+                    break;
+                default:
+                    var expressionTerm = new ExpressionTerm(
+                        iconRegistry,
+                        this.bounds.X + indent,
+                        this.bounds.Bottom,
+                        this.bounds.Width - (indent * 2),
+                        subExpression,
+                        this.Level + 1);
+
+                    component = expressionTerm;
+                    break;
+            }
+
+            component.ExpressionChanged += this.OnExpressionChanged;
+            this.bounds.Height = component.bounds.Bottom - this.bounds.Top + 12;
+            this.Components.Add(component);
+        }
     }
 
     /// <inheritdoc />
-    public override event EventHandler<ExpressionChangedEventArgs>? ExpressionChanged
+    public override event EventHandler<ExpressionChangedEventArgs> ExpressionChanged
     {
         add => this.expressionChanged += value;
         remove => this.expressionChanged -= value;
-    }
-
-    /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
-    {
-        if (this.components.Any(component => component.TryLeftClick(cursor)))
-        {
-            return true;
-        }
-
-        if (this.Level < 0)
-        {
-            return false;
-        }
-
-        if (!this.removeButton.bounds.Contains(cursor))
-        {
-            return false;
-        }
-
-        this.expressionChanged?.InvokeAll(
-            this,
-            new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
-
-        return true;
     }
 
     /// <inheritdoc />
@@ -196,91 +199,31 @@ internal sealed class ExpressionGroup : ExpressionEditor
     {
         if (this.Level >= 0)
         {
-            this.mainComponent.Color = this.bounds.Contains(cursor - this.Offset)
+            this.Color = this.Bounds.Contains(cursor - this.Offset)
                 ? this.BaseColor.Highlight()
                 : this.BaseColor.Muted();
-
-            this.mainComponent.Draw(spriteBatch, cursor);
         }
 
-        foreach (var component in this.components)
-        {
-            switch (component)
-            {
-                case ExpressionEditor:
-                    component.Draw(spriteBatch, cursor);
-
-                    if (component.Bounds.Contains(cursor - this.Offset))
-                    {
-                        this.HoverText = component.HoverText;
-                    }
-
-                    break;
-                case ButtonComponent buttonComponent:
-                    component.Color = buttonComponent.bounds.Contains(cursor - this.Offset)
-                        ? Color.Gray.Highlight()
-                        : Color.Gray.Muted();
-
-                    component.Draw(spriteBatch, cursor);
-
-                    if (component.Bounds.Contains(cursor - this.Offset))
-                    {
-                        this.HoverText = component.HoverText;
-                    }
-
-                    break;
-            }
-        }
-
-        if (this.Level < 0)
-        {
-            return;
-        }
-
-        this.removeButton.tryHover(cursor.X - this.Offset.X, cursor.Y - this.Offset.Y);
-        this.removeButton.draw(spriteBatch, Color.White, 1f, 0, this.Offset.X, this.Offset.Y);
-
-        if (this.removeButton.bounds.Contains(cursor - this.Offset))
-        {
-            this.HoverText = this.removeButton.hoverText;
-        }
-    }
-
-    private void AddSubExpression(IExpression expression)
-    {
-        var indent = this.Level >= 0 ? 12 : 0;
-        ExpressionEditor editor;
-        switch (expression.ExpressionType)
-        {
-            case ExpressionType.All or ExpressionType.Any or ExpressionType.Not:
-                var expressionGroup = new ExpressionGroup(
-                    this.iconRegistry,
-                    this.bounds.X + indent,
-                    this.bounds.Bottom,
-                    this.bounds.Width - (indent * 2),
-                    expression,
-                    this.Level + 1);
-
-                editor = expressionGroup;
-                break;
-            default:
-                var expressionTerm = new ExpressionTerm(
-                    this.iconRegistry,
-                    this.bounds.X + indent,
-                    this.bounds.Bottom,
-                    this.bounds.Width - (indent * 2),
-                    expression,
-                    this.Level + 1);
-
-                editor = expressionTerm;
-                break;
-        }
-
-        editor.ExpressionChanged += this.OnExpressionChanged;
-        this.bounds.Height = editor.bounds.Bottom - this.bounds.Top + 12;
-        this.components.Add(editor);
+        base.DrawInFrame(spriteBatch, cursor);
     }
 
     private void OnExpressionChanged(object? sender, ExpressionChangedEventArgs e) =>
         this.expressionChanged?.InvokeAll(sender, e);
+
+    private void RemoveExpression(object? sender, UiEventArgs e) =>
+        this.expressionChanged?.InvokeAll(
+            this,
+            new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
+
+    private void UpdateColor(object? sender, RenderEventArgs e)
+    {
+        if (sender is not ICustomComponent component)
+        {
+            return;
+        }
+
+        component.Color = component.Bounds.Contains(e.Cursor - this.Offset)
+            ? Color.Gray.Highlight()
+            : Color.Gray.Muted();
+    }
 }

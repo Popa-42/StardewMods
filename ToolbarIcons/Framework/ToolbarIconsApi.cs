@@ -31,7 +31,7 @@ public sealed class ToolbarIconsApi : IToolbarIconsApi
         IIconRegistry iconRegistry,
         ToolbarManager toolbarManager)
     {
-        // Init
+        // Initialize
         this.modInfo = modInfo;
         this.iconRegistry = iconRegistry;
         this.toolbarManager = toolbarManager;

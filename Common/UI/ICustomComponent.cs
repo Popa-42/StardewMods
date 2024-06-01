@@ -30,6 +30,9 @@ internal interface ICustomComponent
     /// <summary>Event raised before the component is drawn.</summary>
     event EventHandler<RenderEventArgs> Rendering;
 
+    /// <summary>Event raised when scrolling over a component.</summary>
+    event EventHandler<ScrolledEventArgs> Scrolled;
+
     /// <summary>Gets the component bounds.</summary>
     Rectangle Bounds { get; }
 

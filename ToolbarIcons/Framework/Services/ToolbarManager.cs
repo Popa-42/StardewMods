@@ -44,7 +44,7 @@ internal sealed class ToolbarManager
         IInputHelper inputHelper,
         IReflectionHelper reflectionHelper)
     {
-        // Init
+        // Initialize
         this.configManager = configManager;
         this.eventManager = eventManager;
         this.iconRegistry = iconRegistry;

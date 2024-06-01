@@ -41,7 +41,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
         ToolbarIconsIntegration toolbarIconsIntegration)
         : base(eventManager, configManager)
     {
-        // Init
+        // Initialize
         this.configManager = configManager;
         this.containerFactory = containerFactory;
         this.containerHandler = containerHandler;

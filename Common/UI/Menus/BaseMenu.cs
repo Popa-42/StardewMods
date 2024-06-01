@@ -63,13 +63,8 @@ internal class BaseMenu : IClickableMenu
         get => this.bounds.Location;
         set
         {
-            var delta = value - this.bounds.Location;
+            this.RepositionComponents(value);
             this.bounds.Location = value;
-            foreach (var component in this.allClickableComponents.OfType<ICustomComponent>())
-            {
-                component.Location += delta;
-            }
-
             this.xPositionOnScreen = value.X;
             this.yPositionOnScreen = value.Y;
         }
@@ -81,6 +76,7 @@ internal class BaseMenu : IClickableMenu
         get => this.bounds.Size;
         set
         {
+            this.RepositionComponents(this.bounds.Location);
             this.bounds.Size = value;
             this.width = value.X;
             this.height = value.Y;
@@ -129,9 +125,19 @@ internal class BaseMenu : IClickableMenu
             return;
         }
 
+        // Draw components
+        foreach (var component in this.allClickableComponents.OfType<ICustomComponent>())
+        {
+            component.DrawOver(b, cursor);
+        }
+
         // Draw over
         this.DrawOver(b, cursor);
     }
+
+    /// <inheritdoc />
+    public sealed override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds) =>
+        this.RepositionMenu();
 
     /// <inheritdoc />
     public sealed override void leftClickHeld(int x, int y)
@@ -258,12 +264,6 @@ internal class BaseMenu : IClickableMenu
     /// <param name="cursor">The mouse position.</param>
     protected virtual void DrawOver(SpriteBatch spriteBatch, Point cursor)
     {
-        // Draw components
-        foreach (var component in this.allClickableComponents.OfType<ICustomComponent>())
-        {
-            component.DrawOver(spriteBatch, cursor);
-        }
-
         // Draw hover text
         if (!string.IsNullOrWhiteSpace(this.HoverText))
         {
@@ -300,6 +300,36 @@ internal class BaseMenu : IClickableMenu
             false,
             false);
     }
+
+    /// <summary>Reposition components when bounds changes.</summary>
+    /// <param name="newLocation">The new origin.</param>
+    protected virtual void RepositionComponents(Point newLocation)
+    {
+        var delta = newLocation - this.bounds.Location;
+        if (delta.Equals(Point.Zero))
+        {
+            return;
+        }
+
+        foreach (var component in this.allClickableComponents)
+        {
+            switch (component)
+            {
+                case ICustomComponent customComponent:
+                    customComponent.Location += delta;
+                    break;
+                default:
+                    component.bounds.Location += delta;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Reposition the menu when window size changes.</summary>
+    protected virtual void RepositionMenu() =>
+        this.Location = new Point(
+            (Game1.uiViewport.Width / 2) - ((this.Bounds.Width + (IClickableMenu.borderWidth * 2)) / 2),
+            (Game1.uiViewport.Height / 2) - ((this.Bounds.Height + (IClickableMenu.borderWidth * 2)) / 2));
 
     /// <summary>Try to perform a left-click.</summary>
     /// <param name="cursor">The mouse position.</param>

@@ -14,16 +14,8 @@ using StardewValley.Menus;
 /// <summary>Menu for customizing tabs.</summary>
 internal sealed class TabMenu : SearchMenu
 {
-    private readonly ClickableTextureComponent addButton;
     private readonly IModConfig config;
-    private readonly ConfigManager configManager;
-    private readonly ClickableTextureComponent copyButton;
-    private readonly ClickableTextureComponent editButton;
     private readonly IIconRegistry iconRegistry;
-    private readonly ClickableTextureComponent okButton;
-    private readonly ClickableTextureComponent pasteButton;
-    private readonly ClickableTextureComponent removeButton;
-    private readonly ClickableTextureComponent saveButton;
 
     private TabEditor? activeTab;
 
@@ -34,11 +26,11 @@ internal sealed class TabMenu : SearchMenu
     public TabMenu(ConfigManager configManager, IExpressionHandler expressionHandler, IIconRegistry iconRegistry)
         : base(expressionHandler, iconRegistry, string.Empty)
     {
-        this.configManager = configManager;
+        // Initialize
         this.iconRegistry = iconRegistry;
-        this.config = this.configManager.GetNew();
+        this.config = configManager.GetNew();
 
-        this.saveButton = iconRegistry
+        var saveButton = iconRegistry
             .Icon(InternalIcon.Save)
             .Component(IconStyle.Button)
             .AsBuilder()
@@ -46,7 +38,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Save_Name())
             .Value;
 
-        this.copyButton = iconRegistry
+        var copyButton = iconRegistry
             .Icon(InternalIcon.Copy)
             .Component(IconStyle.Button)
             .AsBuilder()
@@ -57,7 +49,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Copy_Tooltip())
             .Value;
 
-        this.pasteButton = iconRegistry
+        var pasteButton = iconRegistry
             .Icon(InternalIcon.Paste)
             .Component(IconStyle.Button)
             .AsBuilder()
@@ -68,7 +60,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Paste_Tooltip())
             .Value;
 
-        this.editButton = iconRegistry
+        var editButton = iconRegistry
             .Icon(VanillaIcon.ColorPicker)
             .Component(IconStyle.Transparent)
             .AsBuilder()
@@ -79,7 +71,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Edit_Tooltip())
             .Value;
 
-        this.addButton = iconRegistry
+        var addButton = iconRegistry
             .Icon(VanillaIcon.Plus)
             .Component(IconStyle.Button)
             .AsBuilder()
@@ -90,7 +82,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Add_Tooltip())
             .Value;
 
-        this.removeButton = iconRegistry
+        var removeButton = iconRegistry
             .Icon(VanillaIcon.Trash)
             .Component(IconStyle.Button)
             .AsBuilder()
@@ -101,7 +93,7 @@ internal sealed class TabMenu : SearchMenu
             .HoverText(I18n.Ui_Remove_Tooltip())
             .Value;
 
-        this.okButton = iconRegistry
+        var okButton = iconRegistry
             .Icon(VanillaIcon.Ok)
             .Component(IconStyle.Transparent)
             .AsBuilder()
@@ -111,12 +103,21 @@ internal sealed class TabMenu : SearchMenu
                     this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2)))
             .Value;
 
-        this.allClickableComponents.Add(this.copyButton);
-        this.allClickableComponents.Add(this.pasteButton);
-        this.allClickableComponents.Add(this.editButton);
-        this.allClickableComponents.Add(this.addButton);
-        this.allClickableComponents.Add(this.removeButton);
-        this.allClickableComponents.Add(this.okButton);
+        // Events
+        saveButton.Clicked += this.OnClickedSave;
+        copyButton.Clicked += this.OnClickedCopy;
+        pasteButton.Clicked += this.OnClickedPaste;
+        addButton.Clicked += this.OnClickedAdd;
+        removeButton.Clicked += this.OnClickedRemove;
+        okButton.Clicked += this.OnClickedOk;
+
+        // Add components
+        this.Components.Add(copyButton);
+        this.Components.Add(pasteButton);
+        this.Components.Add(editButton);
+        this.Components.Add(addButton);
+        this.Components.Add(removeButton);
+        this.Components.Add(okButton);
 
         for (var i = this.config.InventoryTabList.Count - 1; i >= 0; i--)
         {
@@ -142,11 +143,11 @@ internal sealed class TabMenu : SearchMenu
                 Index = i,
             };
 
-            tabIcon.Clicked += this.OnClicked;
+            tabIcon.Clicked += this.OnClickedIcon;
             tabIcon.MoveDown += this.OnMoveDown;
             tabIcon.MoveUp += this.OnMoveUp;
 
-            this.allClickableComponents.Add(tabIcon);
+            this.Components.Add(tabIcon);
 
             if (i != 0)
             {
@@ -162,110 +163,43 @@ internal sealed class TabMenu : SearchMenu
     /// <inheritdoc />
     protected override bool HighlightMethod(Item item) => true;
 
-    /// <inheritdoc />
-    protected override bool TryLeftClick(Point cursor)
+    private void OnClickedAdd(object? sender, UiEventArgs e)
     {
-        if (this.saveButton.bounds.Contains(cursor) && this.readyToClose())
+        Game1.playSound("drumkit6");
+        var tabData = new TabData
         {
-            Game1.playSound("drumkit6");
-            if (this.activeTab is not null)
-            {
-                this.config.InventoryTabList[this.activeTab.Index].SearchTerm = this.SearchText;
-            }
+            Icon = VanillaIcon.Plus.ToStringFast(),
+            Label = I18n.Ui_NewTab_Name(),
+        };
 
-            return true;
-        }
-
-        if (this.copyButton.bounds.Contains(cursor))
+        var icon = this.iconRegistry.Icon(VanillaIcon.Plus);
+        var tabIcon = new TabEditor(
+            this.iconRegistry,
+            this.xPositionOnScreen - (Game1.tileSize * 2) - 256,
+            this.yPositionOnScreen + (Game1.tileSize * (this.config.InventoryTabList.Count + 1)) + 16,
+            (Game1.tileSize * 2) + 256,
+            icon,
+            tabData)
         {
-            Game1.playSound("drumkit6");
-            DesktopClipboard.SetText(this.SearchText);
-            return true;
-        }
+            Active = false,
+            Index = this.config.InventoryTabList.Count,
+        };
 
-        if (this.pasteButton.bounds.Contains(cursor))
-        {
-            Game1.playSound("drumkit6");
-            var searchText = string.Empty;
-            DesktopClipboard.GetText(ref searchText);
-            this.SearchText = searchText;
-            this.UpdateExpression();
-            return true;
-        }
+        tabIcon.Clicked += this.OnClickedIcon;
+        tabIcon.MoveDown += this.OnMoveDown;
+        tabIcon.MoveUp += this.OnMoveUp;
 
-        if (this.addButton.bounds.Contains(cursor))
-        {
-            Game1.playSound("drumkit6");
-            var tabData = new TabData
-            {
-                Icon = VanillaIcon.Plus.ToStringFast(),
-                Label = I18n.Ui_NewTab_Name(),
-            };
-
-            var icon = this.iconRegistry.Icon(VanillaIcon.Plus);
-            var tabIcon = new TabEditor(
-                this.iconRegistry,
-                this.xPositionOnScreen - (Game1.tileSize * 2) - 256,
-                this.yPositionOnScreen + (Game1.tileSize * (this.config.InventoryTabList.Count + 1)) + 16,
-                (Game1.tileSize * 2) + 256,
-                icon,
-                tabData)
-            {
-                Active = false,
-                Index = this.config.InventoryTabList.Count,
-            };
-
-            tabIcon.Clicked += this.OnClicked;
-            tabIcon.MoveDown += this.OnMoveDown;
-            tabIcon.MoveUp += this.OnMoveUp;
-
-            this.allClickableComponents.Add(tabIcon);
-            this.config.InventoryTabList.Add(tabData);
-            return true;
-        }
-
-        if (this.removeButton.bounds.Contains(cursor))
-        {
-            Game1.playSound("drumkit6");
-            if (this.activeTab is not null)
-            {
-                this.config.InventoryTabList.RemoveAt(this.activeTab.Index);
-                for (var index = this.allClickableComponents.IndexOf(this.activeTab);
-                    index < this.allClickableComponents.Count - 1;
-                    index++)
-                {
-                    var current = (TabEditor)this.allClickableComponents[index];
-                    var next = (TabEditor)this.allClickableComponents[index + 1];
-                    (current.Index, next.Index) = (next.Index, current.Index);
-
-                    var currentY = current.bounds.Y;
-                    var nextY = next.bounds.Y;
-
-                    current.Location = new Point(current.bounds.X, nextY);
-                    next.Location = new Point(next.bounds.X, currentY);
-
-                    (this.allClickableComponents[index], this.allClickableComponents[index + 1]) = (
-                        this.allClickableComponents[index + 1], this.allClickableComponents[index]);
-                }
-
-                this.allClickableComponents.RemoveAt(this.allClickableComponents.Count - 1);
-                this.activeTab = null;
-            }
-
-            return true;
-        }
-
-        if (this.okButton.bounds.Contains(cursor))
-        {
-            Game1.playSound("bigDeSelect");
-            this.exitThisMenuNoSound();
-            return true;
-        }
-
-        return false;
+        this.Components.Add(tabIcon);
+        this.config.InventoryTabList.Add(tabData);
     }
 
-    private void OnClicked(object? sender, UiEventArgs e)
+    private void OnClickedCopy(object? sender, UiEventArgs e)
+    {
+        Game1.playSound("drumkit6");
+        DesktopClipboard.SetText(this.SearchText);
+    }
+
+    private void OnClickedIcon(object? sender, UiEventArgs e)
     {
         if (sender is not TabEditor tabEditor)
         {
@@ -287,6 +221,58 @@ internal sealed class TabMenu : SearchMenu
         }
     }
 
+    private void OnClickedOk(object? sender, UiEventArgs e)
+    {
+        Game1.playSound("bigDeSelect");
+        this.exitThisMenuNoSound();
+    }
+
+    private void OnClickedPaste(object? sender, UiEventArgs e)
+    {
+        Game1.playSound("drumkit6");
+        var searchText = string.Empty;
+        DesktopClipboard.GetText(ref searchText);
+        this.SearchText = searchText;
+        this.UpdateExpression();
+    }
+
+    private void OnClickedRemove(object? sender, UiEventArgs e)
+    {
+        Game1.playSound("drumkit6");
+        if (this.activeTab is null)
+        {
+            return;
+        }
+
+        this.config.InventoryTabList.RemoveAt(this.activeTab.Index);
+        for (var index = this.Components.IndexOf(this.activeTab); index < this.Components.Count - 1; index++)
+        {
+            var current = (TabEditor)this.Components[index];
+            var next = (TabEditor)this.Components[index + 1];
+            (current.Index, next.Index) = (next.Index, current.Index);
+
+            var currentY = current.bounds.Y;
+            var nextY = next.bounds.Y;
+
+            current.Location = new Point(current.bounds.X, nextY);
+            next.Location = new Point(next.bounds.X, currentY);
+
+            (this.Components[index], this.Components[index + 1]) = (this.Components[index + 1], this.Components[index]);
+        }
+
+        this.Components.RemoveAt(this.Components.Count - 1);
+        this.activeTab = null;
+    }
+
+    private void OnClickedSave(object? sender, UiEventArgs e)
+    {
+        Game1.playSound("drumkit6");
+        if (this.activeTab is not null)
+        {
+            this.config.InventoryTabList[this.activeTab.Index].SearchTerm = this.SearchText;
+        }
+    }
+
     private void OnMoveDown(object? sender, UiEventArgs e)
     {
         if (sender is not TabEditor tabEditor || tabEditor.Index >= this.config.InventoryTabList.Count - 1)
@@ -299,9 +285,9 @@ internal sealed class TabMenu : SearchMenu
         (this.config.InventoryTabList[tabEditor.Index], this.config.InventoryTabList[tabEditor.Index + 1]) = (
             this.config.InventoryTabList[tabEditor.Index + 1], this.config.InventoryTabList[tabEditor.Index]);
 
-        var index = this.allClickableComponents.IndexOf(tabEditor);
-        var current = (TabEditor)this.allClickableComponents[index];
-        var next = (TabEditor)this.allClickableComponents[index + 1];
+        var index = this.Components.IndexOf(tabEditor);
+        var current = (TabEditor)this.Components[index];
+        var next = (TabEditor)this.Components[index + 1];
         (current.Index, next.Index) = (next.Index, current.Index);
 
         var currentY = current.bounds.Y;
@@ -310,8 +296,7 @@ internal sealed class TabMenu : SearchMenu
         current.Location = new Point(current.bounds.X, nextY);
         next.Location = new Point(next.bounds.X, currentY);
 
-        (this.allClickableComponents[index], this.allClickableComponents[index + 1]) = (
-            this.allClickableComponents[index + 1], this.allClickableComponents[index]);
+        (this.Components[index], this.Components[index + 1]) = (this.Components[index + 1], this.Components[index]);
     }
 
     private void OnMoveUp(object? sender, UiEventArgs e)
@@ -328,9 +313,9 @@ internal sealed class TabMenu : SearchMenu
         (this.config.InventoryTabList[tabEditor.Index], this.config.InventoryTabList[tabEditor.Index - 1]) = (
             this.config.InventoryTabList[tabEditor.Index - 1], this.config.InventoryTabList[tabEditor.Index]);
 
-        var index = this.allClickableComponents.IndexOf(tabEditor);
-        var current = (TabEditor)this.allClickableComponents[index];
-        var previous = (TabEditor)this.allClickableComponents[index - 1];
+        var index = this.Components.IndexOf(tabEditor);
+        var current = (TabEditor)this.Components[index];
+        var previous = (TabEditor)this.Components[index - 1];
         (current.Index, previous.Index) = (previous.Index, current.Index);
 
         var currentY = current.bounds.Y;
@@ -339,7 +324,6 @@ internal sealed class TabMenu : SearchMenu
         current.Location = new Point(current.bounds.X, previousY);
         previous.Location = new Point(previous.bounds.X, currentY);
 
-        (this.allClickableComponents[index], this.allClickableComponents[index - 1]) = (
-            this.allClickableComponents[index - 1], this.allClickableComponents[index]);
+        (this.Components[index], this.Components[index - 1]) = (this.Components[index - 1], this.Components[index]);
     }
 }

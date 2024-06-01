@@ -34,6 +34,7 @@ internal sealed class ComponentList : IList<ClickableComponent>
     public ComponentList(ICustomComponent parent)
     {
         this.components = new List<ClickableComponent>();
+        this.menu = parent.Menu;
         this.parent = parent;
     }
 

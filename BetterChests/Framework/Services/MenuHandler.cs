@@ -54,7 +54,7 @@ internal sealed class MenuHandler : BaseService<MenuHandler>
         IModEvents modEvents,
         IPatchManager patchManager)
     {
-        // Init
+        // Initialize
         MenuHandler.instance = this;
         this.containerFactory = containerFactory;
         this.eventManager = eventManager;

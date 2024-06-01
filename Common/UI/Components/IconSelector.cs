@@ -122,9 +122,15 @@ internal sealed class IconSelector : BaseComponent
     }
 
     /// <inheritdoc />
-    public override void DrawUnder(SpriteBatch b, Point cursor) =>
+    public override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
+    {
+        if (!this.IsVisible)
+        {
+            return;
+        }
+
         IClickableMenu.drawTextureBox(
-            b,
+            spriteBatch,
             Game1.mouseCursors,
             OptionsDropDown.dropDownBGSource,
             this.bounds.X,
@@ -135,6 +141,9 @@ internal sealed class IconSelector : BaseComponent
             Game1.pixelZoom,
             false,
             0.97f);
+
+        base.DrawUnder(spriteBatch, cursor);
+    }
 
     /// <summary>Get the hover text for an icon.</summary>
     /// <param name="icon">The icon.</param>
