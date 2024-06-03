@@ -2,6 +2,7 @@ namespace StardewMods.BetterChests.Framework.UI.Components;
 
 using System.Collections.Immutable;
 using System.Globalization;
+using Microsoft.Xna.Framework;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services;
@@ -68,8 +69,8 @@ internal sealed class ExpressionsEditor : BaseComponent
             -1);
 
         this.rootComponent.ExpressionChanged += this.OnExpressionChanged;
-
         this.Components.Add(this.rootComponent);
+        this.Overflow = new Point(0, this.rootComponent.Bounds.Height - this.Bounds.Height);
     }
 
     private void AddExpression(IExpression toAddTo, ExpressionType expressionType)

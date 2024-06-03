@@ -27,6 +27,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     private EventHandler<CursorEventArgs>? cursorOver;
     private bool isHovered;
     private BaseMenu? menu;
+    private Point offset;
     private EventHandler<RenderEventArgs>? rendering;
     private EventHandler<ScrolledEventArgs>? scrolled;
 
@@ -149,7 +150,11 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     }
 
     /// <inheritdoc />
-    public Point Offset { get; set; }
+    public Point Offset
+    {
+        get => this.offset + (this.Parent?.Offset ?? Point.Zero);
+        set => this.offset = value;
+    }
 
     /// <inheritdoc />
     public ICustomComponent? Parent { get; set; }
@@ -177,7 +182,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
         }
 
         this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch, cursor));
-        this.draw(spriteBatch, this.Color, 1f, 0, this.Offset.X, this.Offset.Y);
+        this.draw(spriteBatch, this.Color, 1f, 0, -this.Offset.X, -this.Offset.Y);
     }
 
     /// <inheritdoc />
@@ -203,7 +208,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <inheritdoc />
     public bool TryLeftClick(Point cursor)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor))
+        if (!this.IsVisible || !this.bounds.Contains(cursor + this.Offset))
         {
             return false;
         }
@@ -215,7 +220,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <inheritdoc />
     public bool TryRightClick(Point cursor)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor))
+        if (!this.IsVisible || !this.Bounds.Contains(cursor + this.Offset))
         {
             return false;
         }
@@ -235,8 +240,8 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
             return;
         }
 
-        this.tryHover(cursor.X, cursor.Y);
-        if (this.isHovered == this.Bounds.Contains(cursor - this.Offset))
+        this.tryHover(cursor.X + this.Offset.X, cursor.Y + this.Offset.Y);
+        if (this.isHovered == this.Bounds.Contains(cursor + this.Offset))
         {
             return;
         }

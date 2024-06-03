@@ -13,16 +13,16 @@ using StardewValley.Menus;
 /// <summary>A menu for editing search.</summary>
 internal class SearchMenu : BaseMenu
 {
-    private readonly ExpressionsEditor expressionEditor;
     private readonly IExpressionHandler expressionHandler;
+    private readonly ExpressionsEditor expressionsEditor;
     private readonly InventoryMenu inventory;
     private readonly VerticalScrollBar scrollExpressions;
     private readonly VerticalScrollBar scrollInventory;
     private readonly TextField textField;
 
     private List<Item> allItems = [];
-    private int rowOffset;
-    private int totalRows;
+    private int currentOffset;
+    private int maxOffset;
 
     /// <summary>Initializes a new instance of the <see cref="SearchMenu" /> class.</summary>
     /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
@@ -33,7 +33,7 @@ internal class SearchMenu : BaseMenu
         // Initialize
         this.expressionHandler = expressionHandler;
 
-        this.expressionEditor = new ExpressionsEditor(
+        this.expressionsEditor = new ExpressionsEditor(
             this.expressionHandler,
             iconRegistry,
             this.xPositionOnScreen + IClickableMenu.borderWidth,
@@ -47,9 +47,9 @@ internal class SearchMenu : BaseMenu
 
         this.scrollExpressions = new VerticalScrollBar(
             iconRegistry,
-            this.expressionEditor.Bounds.X + this.expressionEditor.Bounds.Width + 4,
-            this.expressionEditor.Bounds.Y + 4,
-            this.expressionEditor.Bounds.Height);
+            this.expressionsEditor.Bounds.X + this.expressionsEditor.Bounds.Width + 4,
+            this.expressionsEditor.Bounds.Y + 4,
+            this.expressionsEditor.Bounds.Height);
 
         this.inventory = new InventoryMenu(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2) + 428,
@@ -80,23 +80,45 @@ internal class SearchMenu : BaseMenu
             initialValue);
 
         // Events
-        this.expressionEditor.ExpressionsChanged += (_, expression) =>
+        this.expressionsEditor.ExpressionsChanged += (_, expression) =>
         {
             if (!string.IsNullOrWhiteSpace(expression?.Text))
             {
                 this.SearchText = expression.Text;
             }
+
+            this.scrollExpressions.IsVisible = !this.expressionsEditor.Overflow.Equals(Point.Zero);
+            this.RefreshItems();
+        };
+
+        this.expressionsEditor.Scrolled += (_, e) =>
+        {
+            var offset = e.Direction switch
+            {
+                > 0 => new Point(0, this.expressionsEditor.Offset.Y - 16),
+                < 0 => new Point(0, this.expressionsEditor.Offset.Y + 16),
+                _ => this.expressionsEditor.Offset,
+            };
+
+            this.scrollExpressions.Value = (float)offset.Y / this.expressionsEditor.Overflow.Y;
+        };
+
+        this.scrollExpressions.ValueChanged += (_, value) =>
+        {
+            this.expressionsEditor.Offset = new Point(0, (int)(this.expressionsEditor.Overflow.Y * value));
         };
 
         this.scrollInventory.ValueChanged += (_, value) =>
         {
-            // offset inventory
+            this.currentOffset = (int)(this.maxOffset * value);
+            this.inventory.actualInventory =
+                this.allItems.Skip(this.currentOffset * 5).Take(this.inventory.capacity).ToList();
         };
 
         this.textField.ValueChanged += (_, _) => this.UpdateExpression();
 
         // Add components
-        this.Components.Add(this.expressionEditor);
+        this.Components.Add(this.expressionsEditor);
         this.Components.Add(this.textField);
         this.Components.Add(this.scrollExpressions);
         this.Components.Add(this.scrollInventory);
@@ -125,6 +147,13 @@ internal class SearchMenu : BaseMenu
         {
             // Auto-complete on tab
         }
+    }
+
+    /// <inheritdoc />
+    protected override void Draw(SpriteBatch spriteBatch, Point cursor)
+    {
+        base.Draw(spriteBatch, cursor);
+        this.inventory.draw(spriteBatch);
     }
 
     /// <inheritdoc />
@@ -177,18 +206,34 @@ internal class SearchMenu : BaseMenu
         if (!this.allItems.Any())
         {
             this.inventory.actualInventory.Clear();
-            this.totalRows = 0;
+            this.maxOffset = 0;
+            this.scrollInventory.IsVisible = false;
             return;
         }
 
         this.inventory.actualInventory = this.allItems.Take(this.inventory.capacity).ToList();
-        this.totalRows = (int)Math.Ceiling(
-            this.allItems.Count / ((float)this.inventory.capacity / this.inventory.rows));
+        this.maxOffset = (int)Math.Ceiling(this.allItems.Count / ((float)this.inventory.capacity / this.inventory.rows))
+            - 7;
+
+        this.scrollInventory.IsVisible = true;
     }
 
     /// <inheritdoc />
-    protected override bool TryScroll(Point cursor, int direction) =>
-        this.inventory.isWithinBounds(cursor.X, cursor.Y) && this.scrollInventory.TryScroll(cursor, direction);
+    protected override bool TryScroll(Point cursor, int direction)
+    {
+        if (!this.inventory.isWithinBounds(cursor.X, cursor.Y))
+        {
+            return false;
+        }
+
+        var offset = direction switch
+        {
+            > 0 => this.currentOffset - 1, < 0 => this.currentOffset + 1, _ => this.currentOffset,
+        };
+
+        this.scrollInventory.Value = (float)offset / this.maxOffset;
+        return true;
+    }
 
     /// <summary>Update the expression by parsing from the search text.</summary>
     protected void UpdateExpression()
@@ -197,6 +242,8 @@ internal class SearchMenu : BaseMenu
             ? expression
             : null;
 
-        this.expressionEditor.ReinitializeComponents(this.Expression);
+        this.expressionsEditor.ReinitializeComponents(this.Expression);
+        this.scrollExpressions.IsVisible = !this.expressionsEditor.Overflow.Equals(Point.Zero);
+        this.RefreshItems();
     }
 }

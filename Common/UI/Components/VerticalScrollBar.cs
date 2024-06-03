@@ -146,11 +146,7 @@ internal sealed class VerticalScrollBar : BaseComponent
         set
         {
             this.value = Math.Clamp(value, 0, 1);
-            this.grabber.Offset = this.grabber.Offset with
-            {
-                Y = (int)((this.runner.Height - this.grabber.Bounds.Height) * this.value),
-            };
-
+            this.grabber.Offset = new Point(0, (int)((this.grabber.Bounds.Height - this.runner.Height) * this.value));
             this.arrowUp.Color = this.value > 0 ? Color.White : Color.Black * 0.35f;
             this.arrowDown.Color = this.value < 1 ? Color.White : Color.Black * 0.35f;
             this.valueChanged?.InvokeAll(this, this.value);
@@ -164,8 +160,8 @@ internal sealed class VerticalScrollBar : BaseComponent
             spriteBatch,
             Game1.mouseCursors,
             new Rectangle(403, 383, 6, 6),
-            this.runner.X + this.Offset.X,
-            this.runner.Y + this.Offset.Y,
+            this.runner.X - this.Offset.X,
+            this.runner.Y - this.Offset.Y,
             this.runner.Width,
             this.runner.Height,
             Color.White,

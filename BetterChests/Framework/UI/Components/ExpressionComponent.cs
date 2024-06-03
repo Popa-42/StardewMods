@@ -65,10 +65,10 @@ internal abstract class ExpressionComponent : BaseComponent
 
         base.DrawOver(spriteBatch, cursor);
 
-        this.warningIcon.Update(cursor - this.Offset);
+        this.warningIcon.Update(cursor + this.Offset);
         this.warningIcon.Draw(spriteBatch, cursor);
 
-        if (this.warningIcon.Bounds.Contains(cursor - this.Offset))
+        if (this.warningIcon.Bounds.Contains(cursor + this.Offset))
         {
             this.HoverText = this.warningIcon.HoverText;
         }
@@ -89,8 +89,8 @@ internal abstract class ExpressionComponent : BaseComponent
                 spriteBatch,
                 Game1.mouseCursors,
                 OptionsDropDown.dropDownBGSource,
-                this.bounds.X,
-                this.bounds.Y,
+                this.bounds.X - this.Offset.X,
+                this.bounds.Y - this.Offset.Y,
                 this.bounds.Width,
                 this.bounds.Height,
                 this.Color,

@@ -30,7 +30,10 @@ internal sealed class ExpressionTerm : ExpressionComponent
 
         var leftTerm = expression.Expressions.ElementAtOrDefault(0);
         var text = leftTerm is not null ? Localized.Attribute(leftTerm.Term) : I18n.Attribute_Any_Name();
-        var leftComponent = new ButtonComponent(x, y, subWidth, 40, "left", text);
+        var leftComponent = new ButtonComponent(x, y, subWidth, 40, "left", text)
+        {
+            Color = this.BaseColor.Muted(),
+        };
 
         var rightTerm = expression.Expressions.ElementAtOrDefault(1);
         var rightComponent = new ButtonComponent(
@@ -39,7 +42,10 @@ internal sealed class ExpressionTerm : ExpressionComponent
             subWidth,
             40,
             "right",
-            rightTerm?.Term ?? expression.Term);
+            rightTerm?.Term ?? expression.Term)
+        {
+            Color = this.BaseColor.Muted(),
+        };
 
         var removeButton = iconRegistry
             .Icon(VanillaIcon.DoNot)
@@ -50,9 +56,11 @@ internal sealed class ExpressionTerm : ExpressionComponent
             .Value;
 
         // Events
-        leftComponent.Rendering += this.UpdateColor;
+        leftComponent.CursorOver += this.Highlight;
+        leftComponent.CursorOut += this.Unhighlight;
         leftComponent.Clicked += this.ChangeAttribute;
-        rightComponent.Rendering += this.UpdateColor;
+        rightComponent.CursorOver += this.Highlight;
+        rightComponent.CursorOut += this.Unhighlight;
         rightComponent.Clicked += this.ChangeValue;
         removeButton.Clicked += this.RemoveExpression;
 
@@ -79,20 +87,28 @@ internal sealed class ExpressionTerm : ExpressionComponent
             sender,
             new ExpressionChangedEventArgs(ExpressionChange.ChangeValue, this.Expression));
 
-    private void RemoveExpression(object? sender, UiEventArgs e) =>
-        this.expressionChanged?.InvokeAll(
-            this,
-            new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
-
-    private void UpdateColor(object? sender, RenderEventArgs e)
+    private void Highlight(object? sender, CursorEventArgs e)
     {
         if (sender is not ICustomComponent component)
         {
             return;
         }
 
-        component.Color = component.Bounds.Contains(e.Cursor - this.Offset)
-            ? this.BaseColor.Highlight()
-            : this.BaseColor.Muted();
+        component.Color = this.BaseColor.Highlight();
+    }
+
+    private void RemoveExpression(object? sender, UiEventArgs e) =>
+        this.expressionChanged?.InvokeAll(
+            this,
+            new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
+
+    private void Unhighlight(object? sender, CursorEventArgs e)
+    {
+        if (sender is not ICustomComponent component)
+        {
+            return;
+        }
+
+        component.Color = this.BaseColor.Muted();
     }
 }

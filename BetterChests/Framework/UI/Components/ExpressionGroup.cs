@@ -38,12 +38,14 @@ internal sealed class ExpressionGroup : ExpressionComponent
                 "toggle",
                 Localized.ExpressionName(expression.ExpressionType))
             {
+                Color = Color.Gray.Muted(),
                 HoverText = Localized.ExpressionTooltip(expression.ExpressionType),
             };
 
             if (expression.ExpressionType is ExpressionType.All or ExpressionType.Any)
             {
-                toggleButton.Rendering += this.UpdateColor;
+                toggleButton.CursorOver += this.Highlight;
+                toggleButton.CursorOut += this.Unhighlight;
                 toggleButton.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
                     this,
                     new ExpressionChangedEventArgs(ExpressionChange.ToggleGroup, this.Expression));
@@ -82,10 +84,12 @@ internal sealed class ExpressionGroup : ExpressionComponent
             "addTerm",
             I18n.Ui_AddTerm_Name())
         {
+            Color = Color.Gray.Muted(),
             HoverText = I18n.Ui_AddTerm_Tooltip(),
         };
 
-        addTerm.Rendering += this.UpdateColor;
+        addTerm.CursorOver += this.Highlight;
+        addTerm.CursorOut += this.Unhighlight;
         addTerm.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.AddTerm, this.Expression));
@@ -101,10 +105,12 @@ internal sealed class ExpressionGroup : ExpressionComponent
             "addGroup",
             I18n.Ui_AddGroup_Name())
         {
+            Color = Color.Gray.Muted(),
             HoverText = I18n.Ui_AddGroup_Tooltip(),
         };
 
-        addGroup.Rendering += this.UpdateColor;
+        addGroup.CursorOver += this.Highlight;
+        addGroup.CursorOut += this.Unhighlight;
         addGroup.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.AddGroup, this.Expression));
@@ -122,10 +128,12 @@ internal sealed class ExpressionGroup : ExpressionComponent
                 "addNot",
                 I18n.Ui_AddNot_Name())
             {
+                Color = Color.Gray.Muted(),
                 HoverText = I18n.Ui_AddNot_Tooltip(),
             };
 
-            addNot.Rendering += this.UpdateColor;
+            addNot.CursorOver += this.Highlight;
+            addNot.CursorOut += this.Unhighlight;
             addNot.Clicked += (_, _) => this.expressionChanged?.InvokeAll(
                 this,
                 new ExpressionChangedEventArgs(ExpressionChange.AddNot, this.Expression));
@@ -199,12 +207,22 @@ internal sealed class ExpressionGroup : ExpressionComponent
     {
         if (this.Level >= 0)
         {
-            this.Color = this.Bounds.Contains(cursor - this.Offset)
+            this.Color = this.Bounds.Contains(cursor + this.Offset)
                 ? this.BaseColor.Highlight()
                 : this.BaseColor.Muted();
         }
 
         base.DrawInFrame(spriteBatch, cursor);
+    }
+
+    private void Highlight(object? sender, CursorEventArgs e)
+    {
+        if (sender is not ICustomComponent component)
+        {
+            return;
+        }
+
+        component.Color = Color.Gray.Highlight();
     }
 
     private void OnExpressionChanged(object? sender, ExpressionChangedEventArgs e) =>
@@ -215,15 +233,13 @@ internal sealed class ExpressionGroup : ExpressionComponent
             this,
             new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
 
-    private void UpdateColor(object? sender, RenderEventArgs e)
+    private void Unhighlight(object? sender, CursorEventArgs e)
     {
         if (sender is not ICustomComponent component)
         {
             return;
         }
 
-        component.Color = component.Bounds.Contains(e.Cursor - this.Offset)
-            ? Color.Gray.Highlight()
-            : Color.Gray.Muted();
+        component.Color = Color.Gray.Muted();
     }
 }

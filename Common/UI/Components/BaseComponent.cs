@@ -152,8 +152,9 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <inheritdoc />
     public virtual Point Offset
     {
-        get => this.offset + this.Parent?.Offset ?? Point.Zero;
-        set => this.offset = value;
+        get => this.offset + (this.Parent?.Offset ?? Point.Zero);
+        set =>
+            this.offset = new Point(Math.Clamp(value.X, 0, this.Overflow.X), Math.Clamp(value.Y, 0, this.Overflow.Y));
     }
 
     /// <summary>Gets or sets the component overflow.</summary>
@@ -162,8 +163,10 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         get => this.overflow;
         set
         {
-            this.overflow = value;
-            this.offset = new Point(Math.Clamp(this.offset.X, 0, value.X), Math.Clamp(this.offset.Y, 0, value.Y));
+            this.overflow = new Point(Math.Max(0, value.X), Math.Max(0, value.Y));
+            this.offset = new Point(
+                Math.Clamp(this.offset.X, 0, this.overflow.X),
+                Math.Clamp(this.offset.Y, 0, this.overflow.Y));
         }
     }
 
@@ -184,6 +187,13 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         }
     }
 
+    private Rectangle Frame =>
+        new(
+            this.bounds.X - (this.Parent?.Offset.X ?? 0),
+            this.bounds.Y - (this.Parent?.Offset.Y ?? 0),
+            this.bounds.Width,
+            this.bounds.Height);
+
     /// <inheritdoc />
     public virtual void Draw(SpriteBatch spriteBatch, Point cursor)
     {
@@ -193,10 +203,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         }
 
         this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch, cursor));
-        UiToolkit.DrawInFrame(
-            spriteBatch,
-            new Rectangle(this.bounds.X, this.bounds.Y, this.bounds.Width, this.bounds.Height),
-            sb => this.DrawInFrame(sb, cursor));
+        UiToolkit.DrawInFrame(spriteBatch, this.Frame, sb => this.DrawInFrame(sb, cursor));
     }
 
     /// <inheritdoc />
@@ -207,7 +214,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return;
         }
 
-        if (this.Bounds.Contains(cursor - this.Offset) && !string.IsNullOrWhiteSpace(this.HoverText))
+        if (this.Frame.Contains(cursor - this.Offset) && !string.IsNullOrWhiteSpace(this.HoverText))
         {
             IClickableMenu.drawToolTip(spriteBatch, this.HoverText, null, null);
         }
@@ -235,7 +242,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <inheritdoc />
     public virtual bool TryLeftClick(Point cursor)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
         {
             return false;
         }
@@ -256,7 +263,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <inheritdoc />
     public virtual bool TryRightClick(Point cursor)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
         {
             return false;
         }
@@ -277,7 +284,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <inheritdoc />
     public virtual bool TryScroll(Point cursor, int direction)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor - this.Offset))
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
         {
             return false;
         }
@@ -299,7 +306,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             component.Update(cursor);
         }
 
-        if (this.isHovered == this.Bounds.Contains(cursor - this.Offset))
+        if (this.isHovered == this.Frame.Contains(cursor))
         {
             return;
         }
