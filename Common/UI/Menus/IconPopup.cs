@@ -39,7 +39,7 @@ internal sealed class IconPopup : BaseMenu
         IIconRegistry iconRegistry,
         IconSelector.GetHoverTextMethod? getHoverText = null,
         float scale = 3f,
-        int spacing = 8)
+        int spacing = 16)
     {
         var icons = iconRegistry.GetIcons().ToList();
         this.sources = icons.Select(icon => icon.Source).Distinct().ToList();
@@ -59,16 +59,33 @@ internal sealed class IconPopup : BaseMenu
         this.iconSelector.AddOperation(this.SortIcons);
         this.Components.Add(this.iconSelector);
 
-        this.Size = new Point(this.iconSelector.Bounds.Width + spacing, this.iconSelector.Bounds.Height + spacing);
+        this.Size = new Point(
+            this.iconSelector.Bounds.Width + 52,
+            this.iconSelector.Bounds.Height + Game1.tileSize + spacing + 52);
+
         this.Location = new Point(
             ((Game1.uiViewport.Width - this.Bounds.Width) / 2) + IClickableMenu.borderWidth,
             ((Game1.uiViewport.Height - this.Bounds.Height) / 2) + IClickableMenu.borderWidth);
 
-        this.textField =
-            new TextField(this.xPositionOnScreen - 12, this.yPositionOnScreen, this.width, string.Empty)
-            {
-                Selected = true,
-            };
+        var scrollbar = new VerticalScrollBar(
+            iconRegistry,
+            this.iconSelector.Bounds.Right + 4,
+            this.iconSelector.Bounds.Y + 4,
+            this.iconSelector.Bounds.Height)
+        {
+            IsVisible = !this.iconSelector.Overflow.Equals(Point.Zero),
+        };
+
+        scrollbar.Attach(this.iconSelector);
+
+        this.textField = new TextField(
+            this.Bounds.X - 12,
+            this.Bounds.Y,
+            this.iconSelector.Bounds.Width + spacing + 8,
+            string.Empty)
+        {
+            Selected = true,
+        };
 
         var okButton = iconRegistry
             .Icon(VanillaIcon.Ok)
@@ -76,8 +93,8 @@ internal sealed class IconPopup : BaseMenu
             .AsBuilder()
             .Location(
                 new Point(
-                    this.xPositionOnScreen + ((this.width - IClickableMenu.borderWidth) / 2) - Game1.tileSize,
-                    this.yPositionOnScreen + this.height + Game1.tileSize))
+                    this.iconSelector.Bounds.Center.X - (IClickableMenu.borderWidth / 2) - Game1.tileSize,
+                    this.Bounds.Bottom - Game1.tileSize))
             .Value;
 
         var cancelButton = iconRegistry
@@ -86,15 +103,15 @@ internal sealed class IconPopup : BaseMenu
             .AsBuilder()
             .Location(
                 new Point(
-                    this.xPositionOnScreen + ((this.width + IClickableMenu.borderWidth) / 2),
-                    this.yPositionOnScreen + this.height + Game1.tileSize))
+                    this.iconSelector.Bounds.Center.X + (IClickableMenu.borderWidth / 2),
+                    this.Bounds.Bottom - Game1.tileSize))
             .Value;
 
         var dropdownButton = iconRegistry
             .Icon(VanillaIcon.Dropdown)
             .Component(IconStyle.Transparent)
             .AsBuilder()
-            .Location(new Point(this.xPositionOnScreen + this.width - 16, this.yPositionOnScreen))
+            .Location(new Point(this.textField.Bounds.Right, this.textField.Bounds.Y))
             .Value;
 
         // Should this update textField.Value to icon.HoverText?
@@ -114,12 +131,23 @@ internal sealed class IconPopup : BaseMenu
         cancelButton.Clicked += (_, _) => this.exitThisMenuNoSound();
         dropdownButton.Clicked += (_, _) =>
         {
-            var dropdown = new OptionDropdown<string>(this.textField, this.sources, this.Bounds.Width, maxOptions: 10);
-            dropdown.OptionSelected += (_, value) => this.textField.Value = value ?? this.textField.Value;
+            var dropdown = new OptionDropdown<string>(
+                this.textField,
+                this.sources,
+                this.iconSelector.Bounds.Width,
+                maxOptions: 10);
+
+            dropdown.OptionSelected += (_, value) =>
+            {
+                this.textField.Value = value ?? this.textField.Value;
+                this.iconSelector.RefreshIcons();
+            };
+
             this.SetChildMenu(dropdown);
         };
 
         // Add scrollbar
+        this.Components.Add(scrollbar);
         this.Components.Add(this.textField);
         this.Components.Add(okButton);
         this.Components.Add(cancelButton);
@@ -155,11 +183,26 @@ internal sealed class IconPopup : BaseMenu
     }
 
     /// <inheritdoc />
-    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor) =>
+    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
+    {
         spriteBatch.Draw(
             Game1.fadeToBlackRect,
             new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
             Color.Black * 0.5f);
+
+        IClickableMenu.drawTextureBox(
+            spriteBatch,
+            Game1.mouseCursors,
+            OptionsDropDown.dropDownBGSource,
+            this.iconSelector.Bounds.X - 4,
+            this.iconSelector.Bounds.Y - 4,
+            this.iconSelector.Bounds.Width + 8,
+            this.iconSelector.Bounds.Height + 8,
+            Color.White,
+            Game1.pixelZoom,
+            false,
+            0.97f);
+    }
 
     private bool HighlightIcon(IIcon icon) =>
         icon.Source.Contains(this.textField.Value, StringComparison.OrdinalIgnoreCase)

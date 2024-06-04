@@ -26,7 +26,7 @@ internal sealed class ExpressionTerm : ExpressionComponent
         : base(x, y, width, 40, expression, level)
     {
         // Initialize
-        var subWidth = ((width - 12) / 2) - 15;
+        var subWidth = ((width - 18) / 2) - 16;
 
         var leftTerm = expression.Expressions.ElementAtOrDefault(0);
         var text = leftTerm is not null ? Localized.Attribute(leftTerm.Term) : I18n.Attribute_Any_Name();
@@ -51,7 +51,7 @@ internal sealed class ExpressionTerm : ExpressionComponent
             .Icon(VanillaIcon.DoNot)
             .Component(IconStyle.Transparent, "remove", 2f)
             .AsBuilder()
-            .Location(new Point(x + width - 24, y + 8))
+            .Location(new Point(this.Bounds.Right - 32, y + 4))
             .HoverText(I18n.Ui_Remove_Tooltip())
             .Value;
 

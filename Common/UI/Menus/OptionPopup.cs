@@ -54,21 +54,35 @@ internal sealed class OptionPopup<TOption> : BaseMenu
             getLabel,
             spacing,
             this.Bounds.X,
-            this.Bounds.Y);
+            this.Bounds.Y + 48);
 
         this.optionSelector.AddHighlight(this.HighlightOption);
         this.optionSelector.AddOperation(this.SortOptions);
         this.Components.Add(this.optionSelector);
 
-        this.Size = new Point(this.optionSelector.Bounds.Width + spacing, this.optionSelector.Bounds.Height + spacing);
+        this.Size = new Point(
+            this.optionSelector.Bounds.Width + spacing + 52,
+            this.optionSelector.Bounds.Height + Game1.tileSize + spacing + 52);
+
         this.Location = new Point(
             ((Game1.uiViewport.Width - this.Bounds.Width) / 2) + IClickableMenu.borderWidth,
             ((Game1.uiViewport.Height - this.Bounds.Height) / 2) + IClickableMenu.borderWidth);
 
+        var scrollbar = new VerticalScrollBar(
+            iconRegistry,
+            this.optionSelector.Bounds.Right + 4,
+            this.optionSelector.Bounds.Y + 4,
+            this.optionSelector.Bounds.Height)
+        {
+            IsVisible = !this.optionSelector.Overflow.Equals(Point.Zero),
+        };
+
+        scrollbar.Attach(this.optionSelector);
+
         this.textField = new TextField(
             this.Bounds.X - 12,
             this.Bounds.Y,
-            this.Bounds.Width,
+            this.optionSelector.Bounds.Width + spacing,
             initialText ?? string.Empty)
         {
             Selected = true,
@@ -80,8 +94,8 @@ internal sealed class OptionPopup<TOption> : BaseMenu
             .AsBuilder()
             .Location(
                 new Point(
-                    this.xPositionOnScreen + ((this.width - IClickableMenu.borderWidth) / 2) - Game1.tileSize,
-                    this.yPositionOnScreen + this.height + Game1.tileSize))
+                    this.optionSelector.Bounds.Center.X - (IClickableMenu.borderWidth / 2) - Game1.tileSize,
+                    this.Bounds.Bottom - Game1.tileSize))
             .Value;
 
         var cancelButton = iconRegistry
@@ -90,14 +104,18 @@ internal sealed class OptionPopup<TOption> : BaseMenu
             .AsBuilder()
             .Location(
                 new Point(
-                    this.xPositionOnScreen + ((this.width + IClickableMenu.borderWidth) / 2),
-                    this.yPositionOnScreen + this.height + Game1.tileSize))
+                    this.optionSelector.Bounds.Center.X + (IClickableMenu.borderWidth / 2),
+                    this.Bounds.Bottom - Game1.tileSize))
             .Value;
 
         this.optionSelector.SelectionChanged += (_, option) =>
             this.textField.Value = option is not null ? this.optionSelector.GetLabel(option) : string.Empty;
 
-        this.textField.ValueChanged += (_, _) => this.optionSelector.RefreshOptions();
+        this.textField.ValueChanged += (_, _) =>
+        {
+            this.optionSelector.RefreshOptions();
+            scrollbar.IsVisible = !this.optionSelector.Overflow.Equals(Point.Zero);
+        };
 
         okButton.Clicked += (_, _) =>
         {
@@ -112,6 +130,7 @@ internal sealed class OptionPopup<TOption> : BaseMenu
         cancelButton.Clicked += (_, _) => this.exitThisMenuNoSound();
 
         // Add scrollbar
+        this.Components.Add(scrollbar);
         this.Components.Add(this.textField);
         this.Components.Add(okButton);
         this.Components.Add(cancelButton);
@@ -145,11 +164,26 @@ internal sealed class OptionPopup<TOption> : BaseMenu
     }
 
     /// <inheritdoc />
-    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor) =>
+    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
+    {
         spriteBatch.Draw(
             Game1.fadeToBlackRect,
             new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
             Color.Black * 0.5f);
+
+        IClickableMenu.drawTextureBox(
+            spriteBatch,
+            Game1.mouseCursors,
+            OptionsDropDown.dropDownBGSource,
+            this.optionSelector.Bounds.X - 4,
+            this.optionSelector.Bounds.Y - 4,
+            this.optionSelector.Bounds.Width + 8,
+            this.optionSelector.Bounds.Height + 8,
+            Color.White,
+            Game1.pixelZoom,
+            false,
+            0.97f);
+    }
 
     private bool HighlightOption(TOption option) =>
         this.optionSelector.GetLabel(option).Contains(this.textField.Value, StringComparison.OrdinalIgnoreCase);

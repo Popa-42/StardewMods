@@ -2,6 +2,7 @@
 namespace StardewMods.FauxCore.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
 using StardewMods.FauxCore.Common.UI.Components;
 using StardewValley.Menus;
@@ -10,6 +11,7 @@ using StardewValley.Menus;
 namespace StardewMods.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.UI.Components;
 using StardewValley.Menus;
@@ -39,15 +41,19 @@ internal sealed class OptionDropdown<TOption> : BaseMenu
         int spacing = 16)
         : base(anchor.bounds.Left, anchor.bounds.Bottom)
     {
-        var optionSelector = new OptionSelector<TOption>(options, minWidth, maxWidth, maxOptions, getLabel, spacing);
-        optionSelector.SelectionChanged += (_, option) => this.optionSelected?.InvokeAll(this, option);
+        var optionSelector =
+            new OptionSelector<TOption>(options, minWidth, maxWidth, maxOptions, getLabel, spacing)
+            {
+                Location = this.Location,
+            };
 
+        optionSelector.SelectionChanged += (_, option) => this.optionSelected?.InvokeAll(this, option);
         this.Components.Add(optionSelector);
         this.Size = new Point(optionSelector.Bounds.Width + spacing, optionSelector.Bounds.Height + spacing);
 
         // Default position is bottom-right
         var anchorOffset = anchor is ICustomComponent customComponent ? customComponent.Offset : Point.Zero;
-        this.Location += anchorOffset;
+        this.Location -= anchorOffset;
 
         // Adjust position if dropdown is out of bounds
         this.Location = new Point(
@@ -67,6 +73,21 @@ internal sealed class OptionDropdown<TOption> : BaseMenu
         add => this.optionSelected += value;
         remove => this.optionSelected -= value;
     }
+
+    /// <inheritdoc />
+    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor) =>
+        IClickableMenu.drawTextureBox(
+            spriteBatch,
+            Game1.mouseCursors,
+            OptionsDropDown.dropDownBGSource,
+            this.Bounds.X,
+            this.Bounds.Y,
+            this.Bounds.Width,
+            this.Bounds.Height,
+            Color.White,
+            Game1.pixelZoom,
+            false,
+            0.97f);
 
     /// <inheritdoc />
     protected override bool TryLeftClick(Point cursor)

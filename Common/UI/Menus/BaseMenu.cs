@@ -3,6 +3,7 @@ namespace StardewMods.FauxCore.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewMods.FauxCore.Common.Enums;
 using StardewMods.FauxCore.Common.Services;
 using StardewValley.Menus;
 
@@ -11,6 +12,7 @@ namespace StardewMods.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewMods.Common.Enums;
 using StardewMods.Common.Services;
 using StardewValley.Menus;
 #endif
@@ -18,6 +20,8 @@ using StardewValley.Menus;
 /// <summary>A custom menu that is constructed from the menu factory.</summary>
 internal class BaseMenu : IClickableMenu
 {
+    private readonly List<Partition> partitions = [];
+
     private Rectangle bounds;
 
     /// <summary>Initializes a new instance of the <see cref="BaseMenu" /> class.</summary>
@@ -40,11 +44,10 @@ internal class BaseMenu : IClickableMenu
             showUpperRightCloseButton)
     {
         this.Components = new ComponentList(this);
-        this.allClickableComponents ??= [];
         this.bounds = new Rectangle(this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height);
         if (this.upperRightCloseButton is not null)
         {
-            this.allClickableComponents.Add(this.upperRightCloseButton);
+            this.Components.Add(this.upperRightCloseButton);
         }
     }
 
@@ -83,6 +86,11 @@ internal class BaseMenu : IClickableMenu
         }
     }
 
+    /// <summary>Adds a partition to the list of partitions.</summary>
+    /// <param name="type">The partition type.</param>
+    /// <param name="location">The partition location.</param>
+    public void AddPartition(PartitionType type, Point location) => this.partitions.Add(new Partition(type, location));
+
     /// <inheritdoc />
     public sealed override void draw(SpriteBatch b) => this.draw(b, -1);
 
@@ -96,7 +104,7 @@ internal class BaseMenu : IClickableMenu
         this.DrawUnder(b, cursor);
 
         // Draw components
-        foreach (var component in this.allClickableComponents.OfType<ICustomComponent>())
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.DrawUnder(b, cursor);
         }
@@ -104,7 +112,7 @@ internal class BaseMenu : IClickableMenu
         // Draw menu
         this.Draw(b, cursor);
 
-        foreach (var component in this.allClickableComponents)
+        foreach (var component in this.Components)
         {
             switch (component)
             {
@@ -126,7 +134,7 @@ internal class BaseMenu : IClickableMenu
         }
 
         // Draw components
-        foreach (var component in this.allClickableComponents.OfType<ICustomComponent>())
+        foreach (var component in this.Components.OfType<ICustomComponent>())
         {
             component.DrawOver(b, cursor);
         }
@@ -147,7 +155,7 @@ internal class BaseMenu : IClickableMenu
         this.Update(cursor);
 
         // Update components
-        foreach (var component in this.allClickableComponents)
+        foreach (var component in this.Components)
         {
             switch (component)
             {
@@ -172,7 +180,7 @@ internal class BaseMenu : IClickableMenu
         this.Update(cursor);
 
         // Update components
-        foreach (var component in this.allClickableComponents)
+        foreach (var component in this.Components)
         {
             switch (component)
             {
@@ -196,7 +204,7 @@ internal class BaseMenu : IClickableMenu
         var cursor = new Point(x, y);
 
         if (this.TryLeftClick(new Point(x, y))
-            || this.allClickableComponents.OfType<ICustomComponent>().Any(component => component.TryLeftClick(cursor)))
+            || this.Components.OfType<ICustomComponent>().Any(component => component.TryLeftClick(cursor)))
         {
             // Do nothing
         }
@@ -209,7 +217,7 @@ internal class BaseMenu : IClickableMenu
         var cursor = new Point(x, y);
 
         if (this.TryRightClick(new Point(x, y))
-            || this.allClickableComponents.OfType<ICustomComponent>().Any(component => component.TryRightClick(cursor)))
+            || this.Components.OfType<ICustomComponent>().Any(component => component.TryRightClick(cursor)))
         {
             // Do nothing
         }
@@ -221,9 +229,7 @@ internal class BaseMenu : IClickableMenu
         base.receiveScrollWheelAction(direction);
         var cursor = UiToolkit.Cursor;
         if (this.TryScroll(cursor, direction)
-            || this
-                .allClickableComponents.OfType<ICustomComponent>()
-                .Any(component => component.TryScroll(cursor, direction)))
+            || this.Components.OfType<ICustomComponent>().Any(component => component.TryScroll(cursor, direction)))
         {
             // Do nothing
         }
@@ -237,7 +243,7 @@ internal class BaseMenu : IClickableMenu
         this.Update(cursor);
 
         // Update components
-        foreach (var component in this.allClickableComponents)
+        foreach (var component in this.Components)
         {
             switch (component)
             {
@@ -290,15 +296,34 @@ internal class BaseMenu : IClickableMenu
         }
 
         Game1.drawDialogueBox(
-            this.xPositionOnScreen,
-            this.yPositionOnScreen,
-            this.width,
-            this.height,
+            this.Bounds.X,
+            this.Bounds.Y,
+            this.Bounds.Width,
+            this.Bounds.Height,
             false,
             true,
             null,
             false,
             false);
+
+        foreach (var (type, location) in this.partitions)
+        {
+            switch (type)
+            {
+                case PartitionType.Horizontal:
+                    this.drawHorizontalPartition(spriteBatch, location.Y);
+                    break;
+                case PartitionType.Vertical:
+                    this.drawVerticalPartition(spriteBatch, location.X);
+                    break;
+                case PartitionType.VerticalIntersecting:
+                    this.drawVerticalIntersectingPartition(spriteBatch, location.X, location.Y);
+                    break;
+                case PartitionType.VerticalUpperIntersecting:
+                    this.drawVerticalUpperIntersectingPartition(spriteBatch, location.X, location.Y);
+                    break;
+            }
+        }
     }
 
     /// <summary>Reposition components when bounds changes.</summary>
@@ -311,7 +336,7 @@ internal class BaseMenu : IClickableMenu
             return;
         }
 
-        foreach (var component in this.allClickableComponents)
+        foreach (var component in this.Components)
         {
             switch (component)
             {
@@ -353,4 +378,6 @@ internal class BaseMenu : IClickableMenu
     {
         // Do nothing
     }
+
+    private readonly record struct Partition(PartitionType Type, Point Location);
 }

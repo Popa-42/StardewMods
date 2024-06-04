@@ -39,6 +39,9 @@ internal interface ICustomComponent
     /// <summary>Gets the child components.</summary>
     ComponentList Components { get; }
 
+    /// <summary>Gets the component frame.</summary>
+    Rectangle Frame { get; }
+
     /// <summary>Gets or sets the component base scale.</summary>
     float BaseScale { get; set; }
 

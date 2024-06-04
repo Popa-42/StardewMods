@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewMods.BetterChests.Framework.UI.Components;
-using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
 using StardewMods.Common.UI.Menus;
@@ -15,14 +14,9 @@ internal class SearchMenu : BaseMenu
 {
     private readonly IExpressionHandler expressionHandler;
     private readonly ExpressionsEditor expressionsEditor;
-    private readonly InventoryMenu inventory;
+    private readonly ItemSelector itemSelector;
     private readonly VerticalScrollBar scrollExpressions;
-    private readonly VerticalScrollBar scrollInventory;
     private readonly TextField textField;
-
-    private List<Item> allItems = [];
-    private int currentOffset;
-    private int maxOffset;
 
     /// <summary>Initializes a new instance of the <see cref="SearchMenu" /> class.</summary>
     /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
@@ -47,28 +41,32 @@ internal class SearchMenu : BaseMenu
 
         this.scrollExpressions = new VerticalScrollBar(
             iconRegistry,
-            this.expressionsEditor.Bounds.X + this.expressionsEditor.Bounds.Width + 4,
+            this.expressionsEditor.Bounds.Right + 4,
             this.expressionsEditor.Bounds.Y + 4,
             this.expressionsEditor.Bounds.Height);
 
-        this.inventory = new InventoryMenu(
+        this.scrollExpressions.Attach(this.expressionsEditor);
+
+        this.itemSelector = new ItemSelector(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2) + 428,
             this.yPositionOnScreen
             + IClickableMenu.spaceToClearSideBorder
             + (IClickableMenu.borderWidth / 2)
             + (Game1.tileSize * 2)
-            + 12,
-            false,
-            new List<Item>(),
-            this.HighlightMethod,
-            35,
-            7);
+            + 8,
+            7,
+            5);
 
-        this.scrollInventory = new VerticalScrollBar(
+        this.itemSelector.AddHighlight(this.HighlightMethod);
+        this.itemSelector.AddOperation(this.GetItems);
+
+        var scrollInventory = new VerticalScrollBar(
             iconRegistry,
-            this.inventory.xPositionOnScreen + this.inventory.width + 4,
-            this.inventory.yPositionOnScreen + 4,
-            this.inventory.height);
+            this.itemSelector.Bounds.Right + 4,
+            this.itemSelector.Bounds.Y + 4,
+            this.itemSelector.Bounds.Height);
+
+        scrollInventory.Attach(this.itemSelector);
 
         this.textField = new TextField(
             this.xPositionOnScreen + IClickableMenu.spaceToClearSideBorder + (IClickableMenu.borderWidth / 2),
@@ -91,37 +89,14 @@ internal class SearchMenu : BaseMenu
             this.RefreshItems();
         };
 
-        this.expressionsEditor.Scrolled += (_, e) =>
-        {
-            var offset = e.Direction switch
-            {
-                > 0 => new Point(0, this.expressionsEditor.Offset.Y - 16),
-                < 0 => new Point(0, this.expressionsEditor.Offset.Y + 16),
-                _ => this.expressionsEditor.Offset,
-            };
-
-            this.scrollExpressions.Value = (float)offset.Y / this.expressionsEditor.Overflow.Y;
-        };
-
-        this.scrollExpressions.ValueChanged += (_, value) =>
-        {
-            this.expressionsEditor.Offset = new Point(0, (int)(this.expressionsEditor.Overflow.Y * value));
-        };
-
-        this.scrollInventory.ValueChanged += (_, value) =>
-        {
-            this.currentOffset = (int)(this.maxOffset * value);
-            this.inventory.actualInventory =
-                this.allItems.Skip(this.currentOffset * 5).Take(this.inventory.capacity).ToList();
-        };
-
         this.textField.ValueChanged += (_, _) => this.UpdateExpression();
 
         // Add components
         this.Components.Add(this.expressionsEditor);
+        this.Components.Add(this.itemSelector);
         this.Components.Add(this.textField);
         this.Components.Add(this.scrollExpressions);
-        this.Components.Add(this.scrollInventory);
+        this.Components.Add(scrollInventory);
         this.UpdateExpression();
     }
 
@@ -150,49 +125,25 @@ internal class SearchMenu : BaseMenu
     }
 
     /// <inheritdoc />
-    protected override void Draw(SpriteBatch spriteBatch, Point cursor)
-    {
-        base.Draw(spriteBatch, cursor);
-        this.inventory.draw(spriteBatch);
-    }
-
-    /// <inheritdoc />
-    protected override void DrawOver(SpriteBatch spriteBatch, Point cursor)
-    {
-        var item = this.inventory.hover(cursor.X, cursor.Y, null);
-        if (item is not null)
-        {
-            IClickableMenu.drawToolTip(
-                spriteBatch,
-                this.inventory.descriptionText,
-                this.inventory.descriptionTitle,
-                item);
-        }
-
-        base.DrawOver(spriteBatch, cursor);
-    }
-
-    /// <inheritdoc />
     protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
     {
         base.DrawUnder(spriteBatch, cursor);
 
         this.drawHorizontalPartition(
             spriteBatch,
-            this.yPositionOnScreen + (IClickableMenu.borderWidth / 2) + Game1.tileSize + 40);
+            this.Bounds.Y + (IClickableMenu.borderWidth / 2) + Game1.tileSize + 40);
 
         this.drawVerticalIntersectingPartition(
             spriteBatch,
-            this.xPositionOnScreen + (IClickableMenu.borderWidth / 2) + 400,
-            this.yPositionOnScreen + (IClickableMenu.borderWidth / 2) + Game1.tileSize + 40);
+            this.Bounds.X + (IClickableMenu.borderWidth / 2) + 400,
+            this.Bounds.Y + (IClickableMenu.borderWidth / 2) + Game1.tileSize + 40);
     }
 
     /// <summary>Get the items that should be displayed in the menu.</summary>
+    /// <param name="items">The items.</param>
     /// <returns>The items to display.</returns>
-    protected virtual List<Item> GetItems() =>
-        this.Expression is null
-            ? Array.Empty<Item>().ToList()
-            : ItemRepository.GetItems(this.Expression.Equals).ToList();
+    protected virtual IEnumerable<Item> GetItems(IEnumerable<Item> items) =>
+        this.Expression is null ? Array.Empty<Item>() : items.Where(this.Expression.Equals);
 
     /// <summary>Highlight the item.</summary>
     /// <param name="item">The item to highlight.</param>
@@ -200,40 +151,7 @@ internal class SearchMenu : BaseMenu
     protected virtual bool HighlightMethod(Item item) => InventoryMenu.highlightAllItems(item);
 
     /// <summary>Refresh the displayed items.</summary>
-    protected void RefreshItems()
-    {
-        this.allItems = this.GetItems();
-        if (!this.allItems.Any())
-        {
-            this.inventory.actualInventory.Clear();
-            this.maxOffset = 0;
-            this.scrollInventory.IsVisible = false;
-            return;
-        }
-
-        this.inventory.actualInventory = this.allItems.Take(this.inventory.capacity).ToList();
-        this.maxOffset = (int)Math.Ceiling(this.allItems.Count / ((float)this.inventory.capacity / this.inventory.rows))
-            - 7;
-
-        this.scrollInventory.IsVisible = true;
-    }
-
-    /// <inheritdoc />
-    protected override bool TryScroll(Point cursor, int direction)
-    {
-        if (!this.inventory.isWithinBounds(cursor.X, cursor.Y))
-        {
-            return false;
-        }
-
-        var offset = direction switch
-        {
-            > 0 => this.currentOffset - 1, < 0 => this.currentOffset + 1, _ => this.currentOffset,
-        };
-
-        this.scrollInventory.Value = (float)offset / this.maxOffset;
-        return true;
-    }
+    protected void RefreshItems() => this.itemSelector.RefreshItems();
 
     /// <summary>Update the expression by parsing from the search text.</summary>
     protected void UpdateExpression()
@@ -242,7 +160,7 @@ internal class SearchMenu : BaseMenu
             ? expression
             : null;
 
-        this.expressionsEditor.ReinitializeComponents(this.Expression);
+        this.expressionsEditor.Expression = this.Expression;
         this.scrollExpressions.IsVisible = !this.expressionsEditor.Overflow.Equals(Point.Zero);
         this.RefreshItems();
     }

@@ -2,6 +2,7 @@
 namespace StardewMods.FauxCore.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
 using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
 using StardewMods.FauxCore.Common.UI.Components;
@@ -11,6 +12,7 @@ using StardewValley.Menus;
 namespace StardewMods.Common.UI.Menus;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
@@ -20,6 +22,7 @@ using StardewValley.Menus;
 /// <summary>Dropdown menu with icon selector.</summary>
 internal sealed class IconDropdown : BaseMenu
 {
+    private readonly IconSelector iconSelector;
     private EventHandler<IIcon?>? iconSelected;
 
     /// <summary>Initializes a new instance of the <see cref="IconDropdown" /> class.</summary>
@@ -40,7 +43,7 @@ internal sealed class IconDropdown : BaseMenu
         int spacing = 8)
         : base(anchor.bounds.Left, anchor.bounds.Bottom)
     {
-        var iconSelector = new IconSelector(
+        this.iconSelector = new IconSelector(
             icons,
             rows,
             columns,
@@ -50,10 +53,10 @@ internal sealed class IconDropdown : BaseMenu
             this.Bounds.X,
             this.Bounds.Y);
 
-        iconSelector.SelectionChanged += (_, icon) => this.iconSelected?.InvokeAll(this, icon);
+        this.iconSelector.SelectionChanged += (_, icon) => this.iconSelected?.InvokeAll(this, icon);
 
-        this.Components.Add(iconSelector);
-        this.Size = new Point(iconSelector.Bounds.Width + spacing, iconSelector.Bounds.Height + spacing);
+        this.Components.Add(this.iconSelector);
+        this.Size = new Point(this.iconSelector.Bounds.Width, this.iconSelector.Bounds.Height);
 
         // Default position is bottom-right
         var anchorOffset = anchor is ICustomComponent customComponent ? customComponent.Offset : Point.Zero;
@@ -77,6 +80,21 @@ internal sealed class IconDropdown : BaseMenu
         add => this.iconSelected += value;
         remove => this.iconSelected -= value;
     }
+
+    /// <inheritdoc />
+    protected override void DrawUnder(SpriteBatch spriteBatch, Point cursor) =>
+        IClickableMenu.drawTextureBox(
+            spriteBatch,
+            Game1.mouseCursors,
+            OptionsDropDown.dropDownBGSource,
+            this.iconSelector.Bounds.X - 4,
+            this.iconSelector.Bounds.Y - 4,
+            this.iconSelector.Bounds.Width + 8,
+            this.iconSelector.Bounds.Height + 8,
+            Color.White,
+            Game1.pixelZoom,
+            false,
+            0.97f);
 
     /// <inheritdoc />
     protected override bool TryLeftClick(Point cursor)

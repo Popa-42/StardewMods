@@ -6,7 +6,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
 using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
-using StardewValley.Menus;
 
 #else
 namespace StardewMods.Common.UI.Components;
@@ -16,7 +15,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services.Integrations.FauxCore;
-using StardewValley.Menus;
 #endif
 
 /// <summary>Component for selecting an icon.</summary>
@@ -55,14 +53,16 @@ internal sealed class IconSelector : BaseComponent
         : base(
             x ?? 0,
             y ?? 0,
-            (columns * ((int)(scale * 16) + spacing)) + spacing,
-            (rows * ((int)(scale * 16) + spacing)) + spacing,
+            columns * ((int)(scale * 16) + spacing),
+            rows * ((int)(scale * 16) + spacing),
             "selectIcon")
     {
+        this.Color = Color.Wheat;
+        this.getHoverText = getHoverText ?? IconSelector.GetUniqueId;
         this.allIcons = allIcons;
         this.columns = columns;
+        this.scale = scale;
         this.spacing = spacing;
-        this.getHoverText = getHoverText ?? IconSelector.GetUniqueId;
         this.length = (int)Math.Floor(scale * 16);
         this.RefreshIcons();
     }
@@ -105,45 +105,11 @@ internal sealed class IconSelector : BaseComponent
 
     /// <summary>Add a highlight operation that will be applied to the items.</summary>
     /// <param name="highlight">The highlight operation.</param>
-    /// <returns>Returns the menu.</returns>
-    public IconSelector AddHighlight(HighlightMethod highlight)
-    {
-        this.highlights.Add(highlight);
-        return this;
-    }
+    public void AddHighlight(HighlightMethod highlight) => this.highlights.Add(highlight);
 
     /// <summary>Add an operation that will be applied to the icons.</summary>
     /// <param name="operation">The operation to perform.</param>
-    /// <returns>Returns the menu.</returns>
-    public IconSelector AddOperation(Operation operation)
-    {
-        this.operations.Add(operation);
-        return this;
-    }
-
-    /// <inheritdoc />
-    public override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
-    {
-        if (!this.IsVisible)
-        {
-            return;
-        }
-
-        IClickableMenu.drawTextureBox(
-            spriteBatch,
-            Game1.mouseCursors,
-            OptionsDropDown.dropDownBGSource,
-            this.bounds.X,
-            this.bounds.Y,
-            this.bounds.Width,
-            this.bounds.Height,
-            Color.White,
-            Game1.pixelZoom,
-            false,
-            0.97f);
-
-        base.DrawUnder(spriteBatch, cursor);
-    }
+    public void AddOperation(Operation operation) => this.operations.Add(operation);
 
     /// <summary>Get the hover text for an icon.</summary>
     /// <param name="icon">The icon.</param>
@@ -159,41 +125,22 @@ internal sealed class IconSelector : BaseComponent
         foreach (var icon in this.icons)
         {
             var index = this.Components.Count;
-            var iconScale = (float)this.length / Math.Max(icon.Area.Width, icon.Area.Height);
             var component = icon
-                .Component(IconStyle.Transparent, index.ToString(CultureInfo.InvariantCulture), iconScale)
+                .Component(IconStyle.Transparent, index.ToString(CultureInfo.InvariantCulture), this.scale)
                 .AsBuilder()
                 .Location(
-                    this.bounds.X
-                    + (index % this.columns * (this.length + this.spacing))
-                    + (int)((this.length - (icon.Area.Width * iconScale)) / 2f)
-                    + this.spacing,
-                    this.bounds.Y
-                    + (index / this.columns * (this.length + this.spacing))
-                    + (int)((this.length - (icon.Area.Height * iconScale)) / 2f)
-                    + this.spacing)
+                    this.Bounds.X + (index % this.columns * (this.length + this.spacing)) + (this.spacing / 2),
+                    this.Bounds.Y + (index / this.columns * (this.length + this.spacing)) + (this.spacing / 2))
                 .HoverText(this.GetHoverText(icon))
                 .Value;
 
-            component.Clicked += (sender, _) =>
-            {
-                if (sender is not ICustomComponent customComponent)
-                {
-                    return;
-                }
+            component.Location += new Point(
+                (int)((this.length - (icon.Area.Width * component.Scale)) / 2f),
+                (int)((this.length - (icon.Area.Height * component.Scale)) / 2f));
 
-                this.CurrentIndex = int.Parse(customComponent.Name, CultureInfo.InvariantCulture);
-            };
-
-            component.Rendering += (sender, _) =>
-            {
-                if (sender is not ICustomComponent customComponent)
-                {
-                    return;
-                }
-
-                customComponent.Color = this.HighlightIcon(icon) ? Color.White : Color.White * 0.25f;
-            };
+            component.Clicked += (_, _) => this.CurrentIndex = int.Parse(component.Name, CultureInfo.InvariantCulture);
+            component.Rendering += (_, _) =>
+                component.Color = this.HighlightIcon(icon) ? Color.White : Color.White * 0.25f;
 
             this.Components.Add(component);
         }
@@ -201,12 +148,10 @@ internal sealed class IconSelector : BaseComponent
         this.Overflow = new Point(
             0,
             this.Components.OfType<ICustomComponent>().Any()
-                ? Math.Max(
-                    0,
-                    this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
-                    - this.Bounds.Y
-                    - this.Bounds.Height
-                    + this.spacing)
+                ? this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
+                - this.Bounds.Y
+                - this.Bounds.Height
+                + this.spacing
                 : 0);
     }
 
@@ -218,16 +163,10 @@ internal sealed class IconSelector : BaseComponent
             spriteBatch.Draw(
                 Game1.mouseCursors,
                 new Rectangle(
-                    this.bounds.X
-                    + (this.CurrentIndex % this.columns * (this.length + this.spacing))
-                    + this.spacing
-                    - this.Offset.X,
-                    this.bounds.Y
-                    + (this.CurrentIndex / this.columns * (this.length + this.spacing))
-                    + this.spacing
-                    - this.Offset.Y,
-                    this.length,
-                    this.length),
+                    this.bounds.X + (this.CurrentIndex % this.columns * (this.length + this.spacing)) - this.Offset.X,
+                    this.bounds.Y + (this.CurrentIndex / this.columns * (this.length + this.spacing)) - this.Offset.Y,
+                    this.length + this.spacing,
+                    this.length + this.spacing),
                 new Rectangle(194, 388, 16, 16),
                 Color.White,
                 0f,

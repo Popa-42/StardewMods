@@ -1,7 +1,6 @@
 namespace StardewMods.BetterChests.Framework.UI.Components;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services;
@@ -31,8 +30,8 @@ internal sealed class ExpressionGroup : ExpressionComponent
         if (this.Level >= 0)
         {
             var toggleButton = new ButtonComponent(
-                x + 8,
-                y + 8,
+                x + 12,
+                y + 12,
                 0,
                 32,
                 "toggle",
@@ -149,7 +148,7 @@ internal sealed class ExpressionGroup : ExpressionComponent
                 .Icon(VanillaIcon.DoNot)
                 .Component(IconStyle.Transparent, "remove", 2f)
                 .AsBuilder()
-                .Location(new Point(x + width - 36, y + 12))
+                .Location(new Point(this.Bounds.Right - 44, y + 12))
                 .HoverText(I18n.Ui_Remove_Tooltip())
                 .Value;
 
@@ -173,6 +172,27 @@ internal sealed class ExpressionGroup : ExpressionComponent
                         this.bounds.Width - (indent * 2),
                         subExpression,
                         this.Level + 1);
+
+                    expressionGroup.Color = expressionGroup.BaseColor.Muted();
+                    expressionGroup.CursorOver += (sender, _) =>
+                    {
+                        if (sender is not ExpressionGroup subComponent)
+                        {
+                            return;
+                        }
+
+                        subComponent.Color = subComponent.BaseColor.Highlight();
+                    };
+
+                    expressionGroup.CursorOut += (sender, _) =>
+                    {
+                        if (sender is not ExpressionGroup subComponent)
+                        {
+                            return;
+                        }
+
+                        subComponent.Color = subComponent.BaseColor.Muted();
+                    };
 
                     component = expressionGroup;
                     break;
@@ -200,19 +220,6 @@ internal sealed class ExpressionGroup : ExpressionComponent
     {
         add => this.expressionChanged += value;
         remove => this.expressionChanged -= value;
-    }
-
-    /// <inheritdoc />
-    protected override void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
-    {
-        if (this.Level >= 0)
-        {
-            this.Color = this.Bounds.Contains(cursor + this.Offset)
-                ? this.BaseColor.Highlight()
-                : this.BaseColor.Muted();
-        }
-
-        base.DrawInFrame(spriteBatch, cursor);
     }
 
     private void Highlight(object? sender, CursorEventArgs e)

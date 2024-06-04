@@ -5,7 +5,6 @@ using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services.Factory;
-using StardewMods.BetterChests.Framework.UI.Menus;
 using StardewMods.Common.Interfaces;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
@@ -19,11 +18,11 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     private readonly ConfigManager configManager;
     private readonly ContainerFactory containerFactory;
     private readonly ContainerHandler containerHandler;
-    private readonly IExpressionHandler expressionHandler;
     private readonly GenericModConfigMenuIntegration genericModConfigMenuIntegration;
     private readonly IIconRegistry iconRegistry;
     private readonly IInputHelper inputHelper;
     private readonly PerScreen<IStorageContainer?> lastContainer = new();
+    private readonly MenuFactory menuFactory;
     private readonly MenuHandler menuHandler;
 
     /// <summary>Initializes a new instance of the <see cref="ConfigureChest" /> class.</summary>
@@ -31,30 +30,30 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     /// <param name="containerFactory">Dependency used for accessing containers.</param>
     /// <param name="containerHandler">Dependency used for handling operations by containers.</param>
     /// <param name="eventManager">Dependency used for managing events.</param>
-    /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
     /// <param name="genericModConfigMenuIntegration">Dependency for Generic Mod Config Menu integration.</param>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
     /// <param name="inputHelper">Dependency used for checking and changing input state.</param>
+    /// <param name="menuFactory">Dependency used for creating menus.</param>
     /// <param name="menuHandler">Dependency used for managing the current menu.</param>
     public ConfigureChest(
         ConfigManager configManager,
         ContainerFactory containerFactory,
         ContainerHandler containerHandler,
         IEventManager eventManager,
-        IExpressionHandler expressionHandler,
         GenericModConfigMenuIntegration genericModConfigMenuIntegration,
         IIconRegistry iconRegistry,
         IInputHelper inputHelper,
+        MenuFactory menuFactory,
         MenuHandler menuHandler)
         : base(eventManager, configManager)
     {
         this.configManager = configManager;
         this.containerFactory = containerFactory;
         this.containerHandler = containerHandler;
-        this.expressionHandler = expressionHandler;
         this.genericModConfigMenuIntegration = genericModConfigMenuIntegration;
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;
+        this.menuFactory = menuFactory;
         this.menuHandler = menuHandler;
     }
 
@@ -210,14 +209,13 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
 
         if (icon.Id == this.CategorizeIcon.Id)
         {
-            Game1.activeClickableMenu = new CategorizeMenu(container, this.expressionHandler, this.iconRegistry);
-
+            Game1.activeClickableMenu = this.menuFactory.CreateMenu(MenuType.Categorize, container);
             return;
         }
 
         if (icon.Id == this.SortIcon.Id)
         {
-            Game1.activeClickableMenu = new SortMenu(container, this.expressionHandler, this.iconRegistry);
+            Game1.activeClickableMenu = this.menuFactory.CreateMenu(MenuType.Sorting, container);
         }
     }
 }

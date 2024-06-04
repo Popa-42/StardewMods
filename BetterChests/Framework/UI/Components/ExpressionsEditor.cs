@@ -50,27 +50,30 @@ internal sealed class ExpressionsEditor : BaseComponent
         remove => this.expressionsChanged -= value;
     }
 
-    /// <summary>Reinitialize components based on a new root expression.</summary>
-    /// <param name="expression">The root expression.</param>
-    public void ReinitializeComponents(IExpression? expression)
+    /// <summary>Gets or set the root expressions.</summary>
+    public IExpression? Expression
     {
-        this.Components.Clear();
-        if (expression is null)
+        get => this.rootComponent?.Expression;
+        set
         {
-            return;
+            this.Components.Clear();
+            if (value is null)
+            {
+                return;
+            }
+
+            this.rootComponent = new ExpressionGroup(
+                this.iconRegistry,
+                this.Bounds.X,
+                this.Bounds.Y,
+                this.Bounds.Width,
+                value,
+                -1);
+
+            this.rootComponent.ExpressionChanged += this.OnExpressionChanged;
+            this.Components.Add(this.rootComponent);
+            this.Overflow = new Point(0, this.rootComponent.Bounds.Height - this.Bounds.Height);
         }
-
-        this.rootComponent = new ExpressionGroup(
-            this.iconRegistry,
-            this.Bounds.X,
-            this.Bounds.Y,
-            this.Bounds.Width,
-            expression,
-            -1);
-
-        this.rootComponent.ExpressionChanged += this.OnExpressionChanged;
-        this.Components.Add(this.rootComponent);
-        this.Overflow = new Point(0, this.rootComponent.Bounds.Height - this.Bounds.Height);
     }
 
     private void AddExpression(IExpression toAddTo, ExpressionType expressionType)
@@ -84,7 +87,7 @@ internal sealed class ExpressionsEditor : BaseComponent
 
         var newChildren = GetChildren().ToImmutableList();
         toAddTo.Expressions = newChildren;
-        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.Expression = this.rootComponent.Expression;
         this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 
@@ -113,7 +116,7 @@ internal sealed class ExpressionsEditor : BaseComponent
         }
 
         dynamicTerm.Term = newAttribute.ToStringFast();
-        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.Expression = this.rootComponent.Expression;
         this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
     }
 
@@ -127,7 +130,7 @@ internal sealed class ExpressionsEditor : BaseComponent
         }
 
         staticTerm.Term = newValue;
-        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.Expression = this.rootComponent.Expression;
         this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
     }
 
@@ -168,7 +171,7 @@ internal sealed class ExpressionsEditor : BaseComponent
 
         var newChildren = GetChildren().ToImmutableList();
         toRemove.Parent.Expressions = newChildren;
-        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.Expression = this.rootComponent.Expression;
         this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 
@@ -247,7 +250,7 @@ internal sealed class ExpressionsEditor : BaseComponent
 
         var newChildren = GetChildren().ToImmutableList();
         toToggle.Parent.Expressions = newChildren;
-        this.ReinitializeComponents(this.rootComponent.Expression);
+        this.Expression = this.rootComponent.Expression;
         this.expressionsChanged?.InvokeAll(this, this.rootComponent.Expression);
         return;
 

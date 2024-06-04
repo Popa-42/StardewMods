@@ -10,11 +10,6 @@ using StardewValley.Menus;
 /// <summary>Menu for sorting options.</summary>
 internal sealed class SortMenu : SearchMenu
 {
-    private readonly IStorageContainer container;
-    private readonly ClickableTextureComponent copyButton;
-    private readonly ClickableTextureComponent okButton;
-    private readonly ClickableTextureComponent pasteButton;
-    private readonly ClickableTextureComponent saveButton;
     private readonly IExpression? searchExpression;
 
     /// <summary>Initializes a new instance of the <see cref="SortMenu" /> class.</summary>
@@ -24,7 +19,6 @@ internal sealed class SortMenu : SearchMenu
     public SortMenu(IStorageContainer container, IExpressionHandler expressionHandler, IIconRegistry iconRegistry)
         : base(expressionHandler, iconRegistry, container.SortInventoryBy)
     {
-        this.container = container;
         this.searchExpression =
             expressionHandler.TryParseExpression(container.CategorizeChestSearchTerm, out var expression)
                 ? expression
@@ -32,105 +26,89 @@ internal sealed class SortMenu : SearchMenu
 
         this.RefreshItems();
 
-        this.saveButton = iconRegistry
+        var saveButton = iconRegistry
             .Icon(InternalIcon.Save)
             .Component(IconStyle.Button)
             .AsBuilder()
-            .Location(new Point(this.xPositionOnScreen + this.width + 4, this.yPositionOnScreen + Game1.tileSize + 16))
+            .Location(new Point(this.Bounds.Right + 4, this.Bounds.Y + Game1.tileSize + 16))
             .HoverText(I18n.Ui_Save_Name())
             .Value;
 
-        this.copyButton = iconRegistry
+        var copyButton = iconRegistry
             .Icon(InternalIcon.Copy)
             .Component(IconStyle.Button)
             .AsBuilder()
-            .Location(
-                new Point(
-                    this.xPositionOnScreen + this.width + 4,
-                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 2)))
+            .Location(new Point(this.Bounds.Right + 4, this.Bounds.Y + ((Game1.tileSize + 16) * 2)))
             .HoverText(I18n.Ui_Copy_Tooltip())
             .Value;
 
-        this.pasteButton = iconRegistry
+        var pasteButton = iconRegistry
             .Icon(InternalIcon.Paste)
             .Component(IconStyle.Button)
             .AsBuilder()
-            .Location(
-                new Point(
-                    this.xPositionOnScreen + this.width + 4,
-                    this.yPositionOnScreen + ((Game1.tileSize + 16) * 3)))
+            .Location(new Point(this.Bounds.Right + 4, this.Bounds.Y + ((Game1.tileSize + 16) * 3)))
             .HoverText(I18n.Ui_Paste_Tooltip())
             .Value;
 
-        this.okButton = iconRegistry
+        var okButton = iconRegistry
             .Icon(VanillaIcon.Ok)
             .Component(IconStyle.Transparent)
             .AsBuilder()
             .Location(
                 new Point(
-                    this.xPositionOnScreen + this.width + 4,
-                    this.yPositionOnScreen + this.height - Game1.tileSize - (IClickableMenu.borderWidth / 2)))
+                    this.Bounds.Right + 4,
+                    this.Bounds.Bottom - Game1.tileSize - (IClickableMenu.borderWidth / 2)))
             .Value;
 
-        this.allClickableComponents.Add(this.saveButton);
-        this.allClickableComponents.Add(this.copyButton);
-        this.allClickableComponents.Add(this.pasteButton);
-        this.allClickableComponents.Add(this.okButton);
-    }
-
-    /// <inheritdoc />
-    protected override List<Item> GetItems()
-    {
-        var items = this.searchExpression is null
-            ? ItemRepository.GetItems().ToList()
-            : ItemRepository.GetItems(this.searchExpression.Equals).ToList();
-
-        if (this.Expression is not null)
+        okButton.Clicked += (_, _) =>
         {
-            items.Sort(this.Expression);
-        }
+            Game1.playSound("bigDeSelect");
+            this.exitThisMenuNoSound();
+            container.ShowMenu();
+        };
 
-        return items;
-    }
-
-    /// <inheritdoc />
-    protected override bool HighlightMethod(Item item) => true;
-
-    /// <inheritdoc />
-    protected override bool TryLeftClick(Point cursor)
-    {
-        if (this.saveButton.bounds.Contains(cursor) && this.readyToClose())
+        saveButton.Clicked += (_, _) =>
         {
             Game1.playSound("drumkit6");
-            this.container.SortInventoryBy = this.SearchText;
-            return true;
-        }
+            container.SortInventoryBy = this.SearchText;
+        };
 
-        if (this.copyButton.bounds.Contains(cursor))
+        copyButton.Clicked += (_, _) =>
         {
             Game1.playSound("drumkit6");
             DesktopClipboard.SetText(this.SearchText);
-            return true;
-        }
+        };
 
-        if (this.pasteButton.bounds.Contains(cursor))
+        pasteButton.Clicked += (_, _) =>
         {
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
             this.SearchText = searchText;
             this.UpdateExpression();
-            return true;
-        }
+        };
 
-        if (this.okButton.bounds.Contains(cursor))
-        {
-            Game1.playSound("bigDeSelect");
-            this.exitThisMenuNoSound();
-            this.container.ShowMenu();
-            return true;
-        }
-
-        return false;
+        this.Components.Add(saveButton);
+        this.Components.Add(copyButton);
+        this.Components.Add(pasteButton);
+        this.Components.Add(okButton);
     }
+
+    /// <inheritdoc />
+    protected override IEnumerable<Item> GetItems(IEnumerable<Item> items)
+    {
+        var itemsToReturn = this.searchExpression is null
+            ? ItemRepository.GetItems().ToList()
+            : ItemRepository.GetItems(this.searchExpression.Equals).ToList();
+
+        if (this.Expression is not null)
+        {
+            itemsToReturn.Sort(this.Expression);
+        }
+
+        return itemsToReturn;
+    }
+
+    /// <inheritdoc />
+    protected override bool HighlightMethod(Item item) => true;
 }

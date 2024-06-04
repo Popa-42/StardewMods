@@ -2,21 +2,17 @@
 namespace StardewMods.FauxCore.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
 using StardewMods.FauxCore.Common.Services;
 using StardewMods.FauxCore.Common.Services.Integrations.FauxCore;
-using StardewValley.Menus;
 
 #else
 namespace StardewMods.Common.UI.Components;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
 using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.FauxCore;
-using StardewValley.Menus;
 #endif
 
 /// <summary>Represents a scrollbar with up/down arrows.</summary>
@@ -25,7 +21,7 @@ internal sealed class VerticalScrollBar : BaseComponent
     private readonly TextureComponent arrowDown;
     private readonly TextureComponent arrowUp;
     private readonly TextureComponent grabber;
-    private Rectangle runner;
+    private readonly ButtonComponent runner;
     private float value;
     private EventHandler<float>? valueChanged;
 
@@ -51,7 +47,17 @@ internal sealed class VerticalScrollBar : BaseComponent
             .Location(new Point(x, y + height - (12 * Game1.pixelZoom)))
             .Value;
 
-        this.runner = new Rectangle(x + 12, y + (12 * Game1.pixelZoom) + 4, 24, height - (24 * Game1.pixelZoom) - 12);
+        this.runner = new ButtonComponent(
+            x + 12,
+            y + (12 * Game1.pixelZoom) + 4,
+            24,
+            height - (24 * Game1.pixelZoom) - 12,
+            "runner",
+            string.Empty)
+        {
+            SourceRect = new Rectangle(403, 383, 6, 6),
+        };
+
         this.grabber = iconRegistry
             .Icon(VanillaIcon.Grabber)
             .Component(IconStyle.Transparent, "grabber")
@@ -59,8 +65,13 @@ internal sealed class VerticalScrollBar : BaseComponent
             .Location(this.runner.Location)
             .Value;
 
+        this.grabber.Rendering += (_, _) => this.grabber.Offset = new Point(
+            0,
+            (int)((this.grabber.Bounds.Height - this.runner.Bounds.Height) * this.value));
+
         this.Components.Add(this.arrowUp);
         this.Components.Add(this.arrowDown);
+        this.Components.Add(this.runner);
         this.Components.Add(this.grabber);
 
         this.arrowUp.Clicked += (_, _) =>
@@ -74,6 +85,8 @@ internal sealed class VerticalScrollBar : BaseComponent
             Game1.playSound("shwip");
         };
 
+        this.arrowUp.Rendering += (_, _) => this.arrowUp.Color = this.value > 0 ? Color.White : Color.Black * 0.35f;
+
         this.arrowDown.Clicked += (_, _) =>
         {
             if (!(this.Value < 1))
@@ -83,6 +96,17 @@ internal sealed class VerticalScrollBar : BaseComponent
 
             this.arrowDown.Scale = 3.5f;
             Game1.playSound("shwip");
+        };
+
+        this.arrowDown.Rendering += (_, _) => this.arrowDown.Color = this.value < 1 ? Color.White : Color.Black * 0.35f;
+
+        this.runner.Clicked += (_, e) =>
+        {
+            this.IsActive = UiToolkit.Input.IsDown(SButton.MouseLeft)
+                || UiToolkit.Input.IsSuppressed(SButton.MouseLeft);
+
+            this.Value = (float)(e.Cursor.Y - this.runner.bounds.Y) / this.runner.bounds.Height;
+            this.valueChanged?.InvokeAll(this, this.value);
         };
 
         this.grabber.Clicked += (_, _) => this.IsActive = true;
@@ -107,13 +131,8 @@ internal sealed class VerticalScrollBar : BaseComponent
             base.Location = value;
             this.arrowUp.Location = value;
             this.arrowDown.Location = new Point(value.X, value.Y + this.Bounds.Height - (12 * Game1.pixelZoom));
-
-            this.runner = new Rectangle(
-                value.X + 12,
-                value.Y + (12 * Game1.pixelZoom) + 4,
-                24,
-                this.bounds.Height - (24 * Game1.pixelZoom) - 12);
-
+            this.runner.Location = new Point(value.X + 12, value.Y + (12 * Game1.pixelZoom) + 4);
+            this.runner.Size = new Point(24, this.bounds.Height - (24 * Game1.pixelZoom) - 12);
             this.grabber.Location = this.runner.Location;
         }
     }
@@ -130,11 +149,7 @@ internal sealed class VerticalScrollBar : BaseComponent
                 Y = this.bounds.Height - (12 * Game1.pixelZoom),
             };
 
-            this.runner.Size = this.runner.Size with
-            {
-                Y = this.bounds.Height - (24 * Game1.pixelZoom) - 12,
-            };
-
+            this.runner.Size = new Point(24, this.bounds.Height - (24 * Game1.pixelZoom) - 12);
             this.grabber.Location = this.runner.Location;
         }
     }
@@ -143,64 +158,29 @@ internal sealed class VerticalScrollBar : BaseComponent
     public float Value
     {
         get => this.value;
-        set
-        {
-            this.value = Math.Clamp(value, 0, 1);
-            this.grabber.Offset = new Point(0, (int)((this.grabber.Bounds.Height - this.runner.Height) * this.value));
-            this.arrowUp.Color = this.value > 0 ? Color.White : Color.Black * 0.35f;
-            this.arrowDown.Color = this.value < 1 ? Color.White : Color.Black * 0.35f;
-            this.valueChanged?.InvokeAll(this, this.value);
-        }
+        set => this.value = Math.Clamp(value, 0, 1);
     }
 
-    /// <inheritdoc />
-    public override void Draw(SpriteBatch spriteBatch, Point cursor)
+    /// <summary>Attach the scroll bar to a component.</summary>
+    /// <param name="component">The component to attach.</param>
+    public void Attach(BaseComponent component)
     {
-        IClickableMenu.drawTextureBox(
-            spriteBatch,
-            Game1.mouseCursors,
-            new Rectangle(403, 383, 6, 6),
-            this.runner.X - this.Offset.X,
-            this.runner.Y - this.Offset.Y,
-            this.runner.Width,
-            this.runner.Height,
-            Color.White,
-            Game1.pixelZoom);
-
-        this.grabber.Draw(spriteBatch, cursor);
-        this.arrowUp.Draw(spriteBatch, cursor);
-        this.arrowDown.Draw(spriteBatch, cursor);
-    }
-
-    /// <inheritdoc />
-    public override bool TryLeftClick(Point cursor)
-    {
-        if (base.TryLeftClick(cursor))
+        component.OverflowChanged += (_, _) => this.IsVisible = !component.Overflow.Equals(Point.Zero);
+        component.Scrolled += (_, _) => this.Value = (float)component.Offset.Y / component.Overflow.Y;
+        this.arrowUp.Clicked += (_, _) =>
         {
-            return true;
-        }
+            component.Offset = new Point(component.Offset.X, component.Offset.Y - 32);
+            this.Value = (float)component.Offset.Y / component.Overflow.Y;
+        };
 
-        if (!this.runner.Contains(cursor))
+        this.arrowDown.Clicked += (_, _) =>
         {
-            return false;
-        }
+            component.Offset = new Point(component.Offset.X, component.Offset.Y + 32);
+            this.Value = (float)component.Offset.Y / component.Overflow.Y;
+        };
 
-        this.Value = (float)(cursor.Y - this.runner.Y) / this.runner.Height;
-        return true;
-    }
-
-    /// <inheritdoc />
-    public override bool TryScroll(Point cursor, int direction)
-    {
-        var initialValue = this.Value;
-        _ = base.TryScroll(cursor, direction);
-        if (Math.Abs(this.Value - initialValue) < 0.001f)
-        {
-            return false;
-        }
-
-        Game1.playSound("shiny4");
-        return true;
+        this.ValueChanged += (_, _) =>
+            component.Offset = new Point(component.Offset.X, (int)(component.Overflow.Y * this.Value));
     }
 
     /// <inheritdoc />
@@ -214,10 +194,13 @@ internal sealed class VerticalScrollBar : BaseComponent
 
         this.IsActive = UiToolkit.Input.IsDown(SButton.MouseLeft) || UiToolkit.Input.IsSuppressed(SButton.MouseLeft);
         var initialValue = this.Value;
-        this.Value = (float)(cursor.Y - this.runner.Y) / this.runner.Height;
-        if (Math.Abs(this.Value - initialValue) < 0.001f)
+        this.Value = (float)(cursor.Y - this.runner.Bounds.Y) / this.runner.Bounds.Height;
+        if (Math.Abs(this.Value - initialValue) == 0)
         {
-            Game1.playSound("shiny4");
+            return;
         }
+
+        Game1.playSound("shiny4");
+        this.valueChanged?.InvokeAll(this, this.value);
     }
 }

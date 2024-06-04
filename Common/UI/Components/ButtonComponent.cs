@@ -33,6 +33,9 @@ internal sealed class ButtonComponent : BaseComponent
         }
     }
 
+    /// <summary>Gets or sets the source rectangle.</summary>
+    public Rectangle SourceRect { get; set; } = new(403, 373, 9, 9);
+
     /// <summary>Gets or sets the text color.</summary>
     public Color TextColor { get; set; } = Game1.textColor;
 
@@ -42,7 +45,7 @@ internal sealed class ButtonComponent : BaseComponent
         IClickableMenu.drawTextureBox(
             spriteBatch,
             Game1.mouseCursors,
-            new Rectangle(403, 373, 9, 9),
+            this.SourceRect,
             this.bounds.X - this.Offset.X,
             this.bounds.Y - this.Offset.Y,
             this.bounds.Width,

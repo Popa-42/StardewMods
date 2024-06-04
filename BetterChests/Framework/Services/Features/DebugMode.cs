@@ -19,6 +19,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
     private readonly ContainerHandler containerHandler;
     private readonly IExpressionHandler expressionHandler;
     private readonly IIconRegistry iconRegistry;
+    private readonly MenuFactory menuFactory;
     private readonly ToolbarIconsIntegration toolbarIconsIntegration;
 
     /// <summary>Initializes a new instance of the <see cref="DebugMode" /> class.</summary>
@@ -29,6 +30,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
     /// <param name="eventManager">Dependency used for managing events.</param>
     /// <param name="expressionHandler">Dependency used for parsing expressions.</param>
     /// <param name="iconRegistry">Dependency used for registering and retrieving icons.</param>
+    /// <param name="menuFactory">Dependency used for creating menus.</param>
     /// <param name="toolbarIconsIntegration">Dependency for Toolbar Icons integration.</param>
     public DebugMode(
         ICommandHelper commandHelper,
@@ -38,6 +40,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
         IEventManager eventManager,
         IExpressionHandler expressionHandler,
         IIconRegistry iconRegistry,
+        MenuFactory menuFactory,
         ToolbarIconsIntegration toolbarIconsIntegration)
         : base(eventManager, configManager)
     {
@@ -47,6 +50,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
         this.containerHandler = containerHandler;
         this.expressionHandler = expressionHandler;
         this.iconRegistry = iconRegistry;
+        this.menuFactory = menuFactory;
         this.toolbarIconsIntegration = toolbarIconsIntegration;
 
         // Commands
@@ -165,6 +169,13 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
             case "icons":
                 Game1.activeClickableMenu = new IconPopup(this.iconRegistry);
                 return;
+            case "label":
+                Game1.activeClickableMenu = new InputWithIcon(
+                    this.iconRegistry,
+                    this.iconRegistry.Icon(VanillaIcon.Tool),
+                    "Tools");
+
+                return;
             case "layout":
                 Game1.activeClickableMenu = new LayoutMenu();
                 return;
@@ -176,8 +187,7 @@ internal sealed class DebugMode : BaseFeature<DebugMode>
 
                 return;
             case "tab":
-                Game1.activeClickableMenu = new TabMenu(this.configManager, this.expressionHandler, this.iconRegistry);
-
+                Game1.activeClickableMenu = this.menuFactory.CreateMenu(MenuType.Tabs);
                 return;
         }
     }

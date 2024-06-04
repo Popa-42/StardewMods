@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Enums\ItemAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Enums\ItemQuality.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\PartitionType.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Enums\PatchType.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Enums\SimpleLogLevel.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\CommonExtensions.cs"/>
@@ -39,6 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models\DefaultStorageOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Models\Events\CursorEventArgs.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Models\Events\ScrolledEventArgs.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Events\ValueChangedEventArgs.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Models\SavedPatch.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Models\PriorityAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Models\Events\ConfigChangedEventArgs.cs"/>
@@ -116,6 +118,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\BaseComponent.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ButtonComponent.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\IconSelector.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)UI\Components\ItemSelector.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\OptionSelector.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\TextField.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Components\TextureComponent.cs"/>
@@ -125,6 +128,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\BaseMenu.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\IconDropdown.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\IconPopup.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\InputWithIcon.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\OptionDropdown.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)UI\Menus\OptionPopup.cs"/>
   </ItemGroup>

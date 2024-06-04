@@ -41,6 +41,10 @@ internal abstract class ExpressionComponent : BaseComponent
             Game1.mouseCursors,
             new Rectangle(403, 496, 5, 14),
             2f) { HoverText = I18n.Ui_Invalid_Tooltip() };
+
+        this.warningIcon.Rendering += (_, _) => this.warningIcon.IsVisible = !this.Expression.IsValid;
+
+        this.Components.Add(this.warningIcon);
     }
 
     /// <summary>Event raised when the expression is changed.</summary>
@@ -58,20 +62,8 @@ internal abstract class ExpressionComponent : BaseComponent
     /// <inheritdoc />
     public override void DrawOver(SpriteBatch spriteBatch, Point cursor)
     {
-        if (this.Expression.IsValid)
-        {
-            return;
-        }
-
         base.DrawOver(spriteBatch, cursor);
-
-        this.warningIcon.Update(cursor + this.Offset);
         this.warningIcon.Draw(spriteBatch, cursor);
-
-        if (this.warningIcon.Bounds.Contains(cursor + this.Offset))
-        {
-            this.HoverText = this.warningIcon.HoverText;
-        }
     }
 
     /// <inheritdoc />

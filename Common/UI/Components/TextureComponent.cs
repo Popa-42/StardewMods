@@ -80,6 +80,18 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     public ComponentList Components { get; }
 
     /// <inheritdoc />
+    public Rectangle Frame =>
+        this.Parent is not null
+            ? Rectangle.Intersect(
+                this.Parent.Frame,
+                new Rectangle(
+                    this.bounds.X - this.Parent.Offset.X,
+                    this.bounds.Y - this.Parent.Offset.Y,
+                    this.bounds.Width,
+                    this.bounds.Height))
+            : this.Bounds;
+
+    /// <inheritdoc />
     public float BaseScale
     {
         get => this.baseScale;
@@ -193,7 +205,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
             return;
         }
 
-        if (this.Bounds.Contains(cursor - this.Offset) && !string.IsNullOrWhiteSpace(this.HoverText))
+        if (this.Frame.Contains(cursor) && !string.IsNullOrWhiteSpace(this.HoverText))
         {
             IClickableMenu.drawToolTip(spriteBatch, this.HoverText, null, null);
         }
@@ -208,7 +220,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <inheritdoc />
     public bool TryLeftClick(Point cursor)
     {
-        if (!this.IsVisible || !this.bounds.Contains(cursor + this.Offset))
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
         {
             return false;
         }
@@ -220,7 +232,7 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
     /// <inheritdoc />
     public bool TryRightClick(Point cursor)
     {
-        if (!this.IsVisible || !this.Bounds.Contains(cursor + this.Offset))
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
         {
             return false;
         }
@@ -241,12 +253,13 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
         }
 
         this.tryHover(cursor.X + this.Offset.X, cursor.Y + this.Offset.Y);
-        if (this.isHovered == this.Bounds.Contains(cursor + this.Offset))
+        var hovered = this.Menu?.GetChildMenu() is null && this.Frame.Contains(cursor);
+        if (this.isHovered == hovered)
         {
             return;
         }
 
-        this.isHovered = !this.isHovered;
+        this.isHovered = hovered;
         (this.isHovered ? this.cursorOver : this.cursorOut)?.Invoke(this, new CursorEventArgs(cursor));
     }
 }

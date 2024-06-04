@@ -3,18 +3,14 @@ namespace StardewMods.FauxCore.Common.UI.Components;
 
 using System.Globalization;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.FauxCore.Common.Helpers;
-using StardewValley.Menus;
 
 #else
 namespace StardewMods.Common.UI.Components;
 
 using System.Globalization;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewMods.Common.Helpers;
-using StardewValley.Menus;
 #endif
 
 /// <summary>Menu for selecting an item from a list of values.</summary>
@@ -25,7 +21,6 @@ internal sealed class OptionSelector<TOption> : BaseComponent
     private readonly GetLabelMethod getLabel;
     private readonly List<HighlightMethod> highlights = [];
     private readonly List<Operation> operations = [];
-    private readonly int spacing;
     private readonly int textHeight;
 
     private int currentIndex = -1;
@@ -52,7 +47,7 @@ internal sealed class OptionSelector<TOption> : BaseComponent
         int? y = null)
         : base(x ?? 0, y ?? 0, 800, 600, "selectOption")
     {
-        this.spacing = spacing;
+        this.Color = Color.Wheat;
         this.getLabel = getLabel ?? OptionSelector<TOption>.GetDefaultLabel;
         this.allOptions = allOptions
             .Where(
@@ -65,8 +60,8 @@ internal sealed class OptionSelector<TOption> : BaseComponent
 
         this.textHeight = textBounds.Max(textBound => textBound.Y);
         this.Size = new Point(
-            Math.Clamp(textBounds.Max(textBound => textBound.X) + this.spacing, minWidth, maxWidth),
-            textBounds.Take(maxOptions).Sum(textBound => textBound.Y) + 16);
+            Math.Clamp(textBounds.Max(textBound => textBound.X) + spacing + 8, minWidth, maxWidth),
+            textBounds.Take(maxOptions).Sum(textBound => textBound.Y) + 8);
 
         this.RefreshOptions();
     }
@@ -118,30 +113,6 @@ internal sealed class OptionSelector<TOption> : BaseComponent
     /// <param name="operation">The operation to perform.</param>
     public void AddOperation(Operation operation) => this.operations.Add(operation);
 
-    /// <inheritdoc />
-    public override void DrawUnder(SpriteBatch spriteBatch, Point cursor)
-    {
-        if (!this.IsVisible)
-        {
-            return;
-        }
-
-        IClickableMenu.drawTextureBox(
-            spriteBatch,
-            Game1.mouseCursors,
-            OptionsDropDown.dropDownBGSource,
-            this.bounds.X,
-            this.bounds.Y,
-            this.bounds.Width,
-            this.bounds.Height,
-            Color.White,
-            Game1.pixelZoom,
-            false,
-            0.97f);
-
-        base.DrawUnder(spriteBatch, cursor);
-    }
-
     /// <summary>Get the label for an option.</summary>
     /// <param name="option">The option.</param>
     /// <returns>The label text.</returns>
@@ -153,38 +124,26 @@ internal sealed class OptionSelector<TOption> : BaseComponent
     {
         this.Components.Clear();
         this.options = this.operations.Aggregate(this.allOptions, (current, operation) => operation(current)).ToList();
-
         foreach (var option in this.options)
         {
             var index = this.Components.Count;
             var component = new ButtonComponent(
-                this.Bounds.X + 8,
-                this.Bounds.Y + (this.textHeight * index),
-                this.Bounds.Width,
+                this.Bounds.X + 4,
+                this.Bounds.Y + (this.textHeight * index) + 4,
+                this.Bounds.Width - 8,
                 this.textHeight,
                 index.ToString(CultureInfo.InvariantCulture),
-                this.GetLabel(option));
-
-            component.Clicked += (sender, _) =>
+                this.GetLabel(option))
             {
-                if (sender is not ICustomComponent customComponent)
-                {
-                    return;
-                }
-
-                this.CurrentIndex = int.Parse(customComponent.Name, CultureInfo.InvariantCulture);
+                Color = this.Color.Muted(),
+                SourceRect = new Rectangle(405, 375, 5, 5),
             };
 
-            component.Rendering += (sender, _) =>
-            {
-                if (sender is not ButtonComponent buttonComponent)
-                {
-                    return;
-                }
-
-                buttonComponent.TextColor =
-                    this.HighlightOption(option) ? Game1.textColor : Game1.unselectedOptionColor;
-            };
+            component.Clicked += (_, _) => this.CurrentIndex = int.Parse(component.Name, CultureInfo.InvariantCulture);
+            component.CursorOver += (_, _) => component.Color = this.Color.Highlight();
+            component.CursorOut += (_, _) => component.Color = this.Color.Muted();
+            component.Rendering += (_, _) => component.TextColor =
+                this.HighlightOption(option) ? Game1.textColor : Game1.unselectedOptionColor;
 
             this.Components.Add(component);
         }
@@ -192,45 +151,11 @@ internal sealed class OptionSelector<TOption> : BaseComponent
         this.Overflow = new Point(
             0,
             this.Components.OfType<ICustomComponent>().Any()
-                ? Math.Max(
-                    0,
-                    this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
-                    - this.Bounds.Y
-                    - this.Bounds.Height
-                    + this.spacing)
+                ? this.Components.OfType<ICustomComponent>().Last().Bounds.Bottom
+                - this.Bounds.Y
+                - this.Bounds.Height
+                + 4
                 : 0);
-    }
-
-    /// <inheritdoc />
-    protected override void DrawInFrame(SpriteBatch spriteBatch, Point cursor)
-    {
-        var currentComponent = this.Components.OfType<ICustomComponent>().ElementAtOrDefault(this.CurrentIndex);
-        if (currentComponent is not null)
-        {
-            spriteBatch.Draw(
-                Game1.staminaRect,
-                new Rectangle(
-                    currentComponent.Bounds.X + this.Offset.X,
-                    currentComponent.Bounds.Y + this.Offset.Y,
-                    currentComponent.Bounds.Width - this.spacing,
-                    currentComponent.Bounds.Height),
-                new Rectangle(0, 0, 1, 1),
-                Color.Wheat,
-                0f,
-                Vector2.Zero,
-                SpriteEffects.None,
-                0.975f);
-        }
-
-        foreach (var component in this.Components.OfType<ICustomComponent>())
-        {
-            var index = int.Parse(component.Name, CultureInfo.InvariantCulture);
-            spriteBatch.DrawString(
-                Game1.smallFont,
-                component.Label,
-                component.Bounds.Location.ToVector2() + this.Offset.ToVector2(),
-                this.HighlightOption(this.options[index]) ? Game1.textColor : Game1.unselectedOptionColor);
-        }
     }
 
     private static string GetDefaultLabel(TOption item) =>

@@ -136,11 +136,12 @@ internal sealed class IconRegistry : IIconRegistry
         float scale = Game1.pixelZoom)
     {
         var texture = this.GetTexture(icon, style);
+
         scale = style switch
         {
             IconStyle.Transparent => Math.Min(
-                4,
-                (int)Math.Floor(16f * scale / Math.Max(icon.Area.Height, icon.Area.Width))),
+                Game1.pixelZoom,
+                16f * scale / Math.Max(icon.Area.Height, icon.Area.Width)),
             IconStyle.Button => 16f * scale / texture.Width,
             _ => scale,
         };

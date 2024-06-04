@@ -32,6 +32,8 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     private BaseMenu? menu;
     private Point offset;
     private Point overflow;
+
+    private EventHandler<ValueChangedEventArgs<Point>>? overflowChanged;
     private EventHandler<RenderEventArgs>? rendering;
     private EventHandler<ScrolledEventArgs>? scrolled;
 
@@ -66,6 +68,13 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         remove => this.cursorOver -= value;
     }
 
+    /// <summary>Event raised when the overflow value is changed.</summary>
+    public event EventHandler<ValueChangedEventArgs<Point>> OverflowChanged
+    {
+        add => this.overflowChanged += value;
+        remove => this.overflowChanged -= value;
+    }
+
     /// <inheritdoc />
     public event EventHandler<RenderEventArgs> Rendering
     {
@@ -85,6 +94,18 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
 
     /// <inheritdoc />
     public ComponentList Components { get; }
+
+    /// <inheritdoc />
+    public Rectangle Frame =>
+        this.Parent is not null
+            ? Rectangle.Intersect(
+                this.Parent.Frame,
+                new Rectangle(
+                    this.bounds.X - this.Parent.Offset.X,
+                    this.bounds.Y - this.Parent.Offset.Y,
+                    this.bounds.Width,
+                    this.bounds.Height))
+            : this.Bounds;
 
     /// <inheritdoc />
     public float BaseScale
@@ -113,7 +134,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     /// <inheritdoc />
     public bool IsVisible
     {
-        get => this.visible;
+        get => this.visible && !this.Frame.Equals(Rectangle.Empty);
         set => this.visible = value;
     }
 
@@ -161,12 +182,15 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
     public virtual Point Overflow
     {
         get => this.overflow;
-        set
+        protected set
         {
+            var oldValue = new Point(this.overflow.X, this.overflow.Y);
             this.overflow = new Point(Math.Max(0, value.X), Math.Max(0, value.Y));
-            this.offset = new Point(
+            this.Offset = new Point(
                 Math.Clamp(this.offset.X, 0, this.overflow.X),
                 Math.Clamp(this.offset.Y, 0, this.overflow.Y));
+
+            this.overflowChanged?.InvokeAll(this, new ValueChangedEventArgs<Point>(oldValue, this.overflow));
         }
     }
 
@@ -187,13 +211,6 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         }
     }
 
-    private Rectangle Frame =>
-        new(
-            this.bounds.X - (this.Parent?.Offset.X ?? 0),
-            this.bounds.Y - (this.Parent?.Offset.Y ?? 0),
-            this.bounds.Width,
-            this.bounds.Height);
-
     /// <inheritdoc />
     public virtual void Draw(SpriteBatch spriteBatch, Point cursor)
     {
@@ -202,7 +219,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return;
         }
 
-        this.rendering?.InvokeAll(this, new RenderEventArgs(spriteBatch, cursor));
+        this.InvokeRendering(this, new RenderEventArgs(spriteBatch, cursor));
         UiToolkit.DrawInFrame(spriteBatch, this.Frame, sb => this.DrawInFrame(sb, cursor));
     }
 
@@ -214,7 +231,7 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return;
         }
 
-        if (this.Frame.Contains(cursor - this.Offset) && !string.IsNullOrWhiteSpace(this.HoverText))
+        if (this.Frame.Contains(cursor) && !string.IsNullOrWhiteSpace(this.HoverText))
         {
             IClickableMenu.drawToolTip(spriteBatch, this.HoverText, null, null);
         }
@@ -250,13 +267,14 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         // Left-click components
         foreach (var component in this
             .Components.OfType<ICustomComponent>()
+            .Reverse()
             .Where(component => component.TryLeftClick(cursor)))
         {
-            this.clicked.InvokeAll(component, new UiEventArgs(SButton.MouseLeft, cursor));
+            this.InvokeClicked(component, new UiEventArgs(SButton.Left, cursor));
             return true;
         }
 
-        this.clicked.InvokeAll(this, new UiEventArgs(SButton.MouseLeft, cursor));
+        this.InvokeClicked(this, new UiEventArgs(SButton.MouseLeft, cursor));
         return true;
     }
 
@@ -271,13 +289,14 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
         // Right-click components
         foreach (var component in this
             .Components.OfType<ICustomComponent>()
+            .Reverse()
             .Where(component => component.TryRightClick(cursor)))
         {
-            this.clicked.InvokeAll(component, new UiEventArgs(SButton.Right, cursor));
+            this.InvokeClicked(component, new UiEventArgs(SButton.Right, cursor));
             return true;
         }
 
-        this.clicked.InvokeAll(this, new UiEventArgs(SButton.Right, cursor));
+        this.InvokeClicked(this, new UiEventArgs(SButton.Right, cursor));
         return true;
     }
 
@@ -289,7 +308,21 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return false;
         }
 
-        this.scrolled?.InvokeAll(this, new ScrolledEventArgs(cursor, direction));
+        if (!this.Overflow.Equals(Point.Zero) && direction != 0)
+        {
+            var oldY = this.Offset.Y;
+            this.Offset = new Point(0, this.Offset.Y + (direction > 0 ? -32 : 32));
+            if (oldY == this.Offset.Y)
+            {
+                return true;
+            }
+
+            Game1.playSound("shiny4");
+            this.InvokeScrolled(this, new ScrolledEventArgs(cursor, direction));
+            return true;
+        }
+
+        this.InvokeScrolled(this, new ScrolledEventArgs(cursor, direction));
         return false;
     }
 
@@ -306,13 +339,14 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             component.Update(cursor);
         }
 
-        if (this.isHovered == this.Frame.Contains(cursor))
+        var hovered = this.Menu?.GetChildMenu() is null && this.Frame.Contains(cursor);
+        if (this.isHovered == hovered)
         {
             return;
         }
 
-        this.isHovered = !this.isHovered;
-        (this.isHovered ? this.cursorOver : this.cursorOut)?.Invoke(this, new CursorEventArgs(cursor));
+        this.isHovered = hovered;
+        (this.isHovered ? this.cursorOver : this.cursorOut)?.InvokeAll(this, new CursorEventArgs(cursor));
     }
 
     /// <summary>Draws the component in a framed area.</summary>
@@ -325,6 +359,21 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             component.Draw(spriteBatch, cursor);
         }
     }
+
+    /// <summary>Invokes the clicked event.</summary>
+    /// <param name="sender">The object that raised the event.</param>
+    /// <param name="e">The event arguments.</param>
+    protected void InvokeClicked(object? sender, UiEventArgs e) => this.clicked?.InvokeAll(sender, e);
+
+    /// <summary>Invokes the rendering event.</summary>
+    /// <param name="sender">The object that raised the event.</param>
+    /// <param name="e">The event arguments.</param>
+    protected void InvokeRendering(object? sender, RenderEventArgs e) => this.rendering?.InvokeAll(sender, e);
+
+    /// <summary>Invokes the scrolled event.</summary>
+    /// <param name="sender">The object that raised the event.</param>
+    /// <param name="e">The event arguments.</param>
+    protected void InvokeScrolled(object? sender, ScrolledEventArgs e) => this.scrolled?.InvokeAll(sender, e);
 
     /// <summary>Reposition components when bounds changes.</summary>
     /// <param name="newLocation">The new origin.</param>

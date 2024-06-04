@@ -7,6 +7,7 @@ using StardewMods.Common.Helpers;
 using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services.Integrations.FauxCore;
 using StardewMods.Common.UI.Components;
+using StardewMods.Common.UI.Menus;
 using StardewValley.Menus;
 
 /// <summary>A component for configuring a tab.</summary>
@@ -31,8 +32,9 @@ internal sealed class TabEditor : BaseComponent
         : base(x, y, width, Game1.tileSize, tabData.Label)
     {
         // Initialize
+        this.Icon = icon;
         this.Data = tabData;
-        this.tabIcon = icon.Component(IconStyle.Transparent).AsBuilder().Value;
+        this.tabIcon = icon.Component(IconStyle.Transparent, "icon").AsBuilder().Value;
 
         this.upArrow = iconRegistry
             .Icon(VanillaIcon.ArrowUp)
@@ -49,6 +51,31 @@ internal sealed class TabEditor : BaseComponent
             .Value;
 
         // Events
+        this.tabIcon.Clicked += (_, _) =>
+        {
+            if (!this.Active)
+            {
+                return;
+            }
+
+            var iconPopup = new IconPopup(iconRegistry);
+            iconPopup.IconSelected += (_, selectedIcon) =>
+            {
+                if (selectedIcon is null)
+                {
+                    return;
+                }
+
+                this.Data.Icon = selectedIcon.UniqueId;
+                var component = selectedIcon.Component(IconStyle.Transparent);
+                this.tabIcon.texture = component.texture;
+                this.tabIcon.sourceRect = component.sourceRect;
+                this.tabIcon.BaseScale = component.baseScale;
+            };
+
+            this.Menu?.SetChildMenu(iconPopup);
+        };
+
         this.tabIcon.Rendering += this.UpdateColor;
         this.upArrow.Clicked += (_, e) => this.moveUp?.InvokeAll(this, new UiEventArgs(e.Button, e.Cursor));
         this.upArrow.Rendering += this.UpdateColor;
@@ -90,6 +117,9 @@ internal sealed class TabEditor : BaseComponent
             this.downArrow.IsVisible = value;
         }
     }
+
+    /// <summary>Gets or sets the tab icon.</summary>
+    public IIcon Icon { get; set; }
 
     /// <summary>Gets or sets the index.</summary>
     public int Index { get; set; }
