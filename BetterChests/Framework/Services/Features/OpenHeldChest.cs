@@ -23,6 +23,7 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
     private readonly MenuHandler menuHandler;
     private readonly IPatchManager patchManager;
     private readonly ProxyChestFactory proxyChestFactory;
+    private readonly StateManager stateManager;
 
     /// <summary>Initializes a new instance of the <see cref="OpenHeldChest" /> class.</summary>
     /// <param name="menuHandler">Dependency used for managing the current menu.</param>
@@ -32,6 +33,7 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
     /// <param name="inputHelper">Dependency used for checking and changing input state.</param>
     /// <param name="patchManager">Dependency used for managing patches.</param>
     /// <param name="proxyChestFactory">Dependency used for creating virtualized chests.</param>
+    /// <param name="stateManager">Dependency used for managing state.</param>
     public OpenHeldChest(
         ContainerFactory containerFactory,
         IEventManager eventManager,
@@ -39,7 +41,8 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
         MenuHandler menuHandler,
         IModConfig modConfig,
         IPatchManager patchManager,
-        ProxyChestFactory proxyChestFactory)
+        ProxyChestFactory proxyChestFactory,
+        StateManager stateManager)
         : base(eventManager, modConfig)
     {
         this.containerFactory = containerFactory;
@@ -47,6 +50,7 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
         this.menuHandler = menuHandler;
         this.patchManager = patchManager;
         this.proxyChestFactory = proxyChestFactory;
+        this.stateManager = stateManager;
 
         this.patchManager.Add(
             this.UniqueId,
@@ -122,7 +126,9 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
 
     private void OnItemHighlighting(ItemHighlightingEventArgs e)
     {
-        if (e.Container is FarmerContainer && (this.menuHandler.CurrentMenu as ItemGrabMenu)?.sourceItem == e.Item)
+        if (this.stateManager.ActiveMenu is ItemGrabMenu itemGrabMenu
+            && e.Container is FarmerContainer
+            && itemGrabMenu.sourceItem == e.Item)
         {
             e.UnHighlight();
         }
@@ -130,8 +136,9 @@ internal sealed class OpenHeldChest : BaseFeature<OpenHeldChest>
 
     private void OnItemTransferring(ItemTransferringEventArgs e)
     {
-        if (this.proxyChestFactory.TryGetProxy(e.Item, out var chest)
-            && (this.menuHandler.CurrentMenu as ItemGrabMenu)?.sourceItem == chest)
+        if (this.stateManager.ActiveMenu is ItemGrabMenu itemGrabMenu
+            && this.proxyChestFactory.TryGetProxy(e.Item, out var chest)
+            && itemGrabMenu.sourceItem == chest)
         {
             e.PreventTransfer();
         }

@@ -107,16 +107,24 @@ internal sealed class ItemSelector : BaseComponent
             return false;
         }
 
+        var scrolledEventArgs = new ScrolledEventArgs(cursor, direction);
         var oldY = this.Offset.Y;
+        this.InvokeScrolled(this, scrolledEventArgs);
+        if (scrolledEventArgs.Handled || this.Overflow.Equals(Point.Zero) || direction == 0)
+        {
+            return scrolledEventArgs.Handled;
+        }
+
+        // Apply default handling
         this.Offset = new Point(0, this.Offset.Y + (direction > 0 ? -1 : 1));
         if (oldY == this.Offset.Y)
         {
-            return true;
+            return scrolledEventArgs.Handled;
         }
 
+        scrolledEventArgs.PreventDefault();
         Game1.playSound("shiny4");
-        this.InvokeScrolled(this, new ScrolledEventArgs(cursor, direction));
-        return true;
+        return scrolledEventArgs.Handled;
     }
 
     /// <inheritdoc />

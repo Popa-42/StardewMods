@@ -225,8 +225,9 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
             return false;
         }
 
-        this.clicked.InvokeAll(this, new UiEventArgs(SButton.MouseLeft, cursor));
-        return true;
+        var uiEventArgs = new UiEventArgs(SButton.MouseLeft, cursor);
+        this.clicked?.InvokeAll(this, uiEventArgs);
+        return uiEventArgs.Handled;
     }
 
     /// <inheritdoc />
@@ -237,12 +238,23 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
             return false;
         }
 
-        this.clicked.InvokeAll(this, new UiEventArgs(SButton.Right, cursor));
-        return true;
+        var uiEventArgs = new UiEventArgs(SButton.MouseRight, cursor);
+        this.clicked?.InvokeAll(this, uiEventArgs);
+        return uiEventArgs.Handled;
     }
 
     /// <inheritdoc />
-    public bool TryScroll(Point cursor, int direction) => false;
+    public bool TryScroll(Point cursor, int direction)
+    {
+        if (!this.IsVisible || !this.Frame.Contains(cursor))
+        {
+            return false;
+        }
+
+        var scrolledEventArgs = new ScrolledEventArgs(cursor, direction);
+        this.scrolled?.InvokeAll(this, scrolledEventArgs);
+        return scrolledEventArgs.Handled;
+    }
 
     /// <inheritdoc />
     public void Update(Point cursor)
@@ -260,6 +272,6 @@ internal sealed class TextureComponent : ClickableTextureComponent, ICustomCompo
         }
 
         this.isHovered = hovered;
-        (this.isHovered ? this.cursorOver : this.cursorOut)?.Invoke(this, new CursorEventArgs(cursor));
+        (this.isHovered ? this.cursorOver : this.cursorOut)?.InvokeAll(this, new CursorEventArgs(cursor));
     }
 }

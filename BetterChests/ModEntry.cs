@@ -42,6 +42,7 @@ internal sealed class ModEntry : Mod
         container.RegisterSingleton<IPatchManager, FauxCoreIntegration>();
         container.RegisterSingleton<ProxyChestFactory>();
         container.RegisterSingleton<ISimpleLogging, FauxCoreIntegration>();
+        container.RegisterSingleton<StateManager>();
         container.RegisterSingleton<StatusEffectManager>();
         container.RegisterSingleton<IThemeHelper, FauxCoreIntegration>();
         container.RegisterSingleton<ToolbarIconsIntegration>();

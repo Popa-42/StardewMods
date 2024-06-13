@@ -165,6 +165,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnClickedAdd(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         var tabData = new TabData
         {
@@ -195,6 +196,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnClickedCopy(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         DesktopClipboard.SetText(this.SearchText);
     }
@@ -206,6 +208,7 @@ internal sealed class TabMenu : SearchMenu
             return;
         }
 
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         this.SearchText = tabEditor.Data.SearchTerm;
         this.UpdateExpression();
@@ -223,12 +226,14 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnClickedOk(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("bigDeSelect");
         this.exitThisMenuNoSound();
     }
 
     private void OnClickedPaste(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         var searchText = string.Empty;
         DesktopClipboard.GetText(ref searchText);
@@ -238,6 +243,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnClickedRemove(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         if (this.activeTab is null)
         {
@@ -266,6 +272,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnClickedSave(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         Game1.playSound("drumkit6");
         if (this.activeTab is not null)
         {
@@ -275,6 +282,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnMoveDown(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         if (sender is not TabEditor tabEditor || tabEditor.Index >= this.config.InventoryTabList.Count - 1)
         {
             return;
@@ -301,6 +309,7 @@ internal sealed class TabMenu : SearchMenu
 
     private void OnMoveUp(object? sender, UiEventArgs e)
     {
+        e.PreventDefault();
         if (sender is not TabEditor
             {
                 Index: > 0,

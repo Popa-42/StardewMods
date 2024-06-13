@@ -43,7 +43,7 @@ internal sealed class MenuFactory
             MenuType.Layout => this.CreateLayoutMenu(),
             MenuType.Sorting when container is not null => this.CreateSortingMenu(container),
             MenuType.Tabs => this.CreateTabsMenu(),
-            _ => throw new ArgumentOutOfRangeException(nameof(menuType), menuType, null),
+            _ => new BaseMenu(),
         };
 
     private BaseMenu CreateCategorizeMenu(IStorageContainer container)
@@ -85,15 +85,17 @@ internal sealed class MenuFactory
             menu.Bounds.Right + 4,
             menu.Bounds.Bottom - Game1.tileSize - (IClickableMenu.borderWidth / 2));
 
-        okButton.Clicked += (_, _) =>
+        okButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("bigDeSelect");
             menu.exitThisMenuNoSound();
             container.ShowMenu();
         };
 
-        saveButton.Clicked += (_, _) =>
+        saveButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             container.CategorizeChestSearchTerm = textField.Value;
             container.CategorizeChestIncludeStacks = stackButtonOn.visible
@@ -101,14 +103,16 @@ internal sealed class MenuFactory
                 : FeatureOption.Disabled;
         };
 
-        copyButton.Clicked += (_, _) =>
+        copyButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             DesktopClipboard.SetText(textField.Value);
         };
 
-        pasteButton.Clicked += (_, _) =>
+        pasteButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
@@ -116,15 +120,17 @@ internal sealed class MenuFactory
             UpdateExpression();
         };
 
-        stackButtonOff.Clicked += (_, _) =>
+        stackButtonOff.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             stackButtonOff.IsVisible = false;
             stackButtonOn.IsVisible = true;
         };
 
-        stackButtonOn.Clicked += (_, _) =>
+        stackButtonOn.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             stackButtonOn.IsVisible = false;
             stackButtonOff.IsVisible = true;
@@ -269,27 +275,31 @@ internal sealed class MenuFactory
             menu.Bounds.Right + 4,
             menu.Bounds.Bottom - Game1.tileSize - (IClickableMenu.borderWidth / 2));
 
-        okButton.Clicked += (_, _) =>
+        okButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("bigDeSelect");
             menu.exitThisMenuNoSound();
             container.ShowMenu();
         };
 
-        saveButton.Clicked += (_, _) =>
+        saveButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             container.SortInventoryBy = textField.Value;
         };
 
-        copyButton.Clicked += (_, _) =>
+        copyButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             DesktopClipboard.SetText(textField.Value);
         };
 
-        pasteButton.Clicked += (_, _) =>
+        pasteButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
@@ -370,27 +380,31 @@ internal sealed class MenuFactory
             menu.Bounds.Right + 4,
             menu.Bounds.Bottom - Game1.tileSize - (IClickableMenu.borderWidth / 2));
 
-        okButton.Clicked += (_, _) =>
+        okButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("bigDeSelect");
             menu.exitThisMenuNoSound();
         };
 
-        saveButton.Clicked += (_, _) =>
+        saveButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
 
             // Save config
         };
 
-        copyButton.Clicked += (_, _) =>
+        copyButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             DesktopClipboard.SetText(textField.Value);
         };
 
-        pasteButton.Clicked += (_, _) =>
+        pasteButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             var searchText = string.Empty;
             DesktopClipboard.GetText(ref searchText);
@@ -398,8 +412,9 @@ internal sealed class MenuFactory
             UpdateExpression();
         };
 
-        editButton.Clicked += (_, _) =>
+        editButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             var activeTab = menu.Components.OfType<TabEditor>().FirstOrDefault(tab => tab.Active);
             if (activeTab is null || !this.iconRegistry.TryGetIcon(activeTab.Data.Icon, out var icon))
             {
@@ -412,8 +427,9 @@ internal sealed class MenuFactory
             menu.SetChildMenu(iconWithLabel);
         };
 
-        addButton.Clicked += (_, _) =>
+        addButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             var tabData = new TabData
             {
@@ -425,8 +441,9 @@ internal sealed class MenuFactory
             config.InventoryTabList.Add(tabData);
         };
 
-        removeButton.Clicked += (_, _) =>
+        removeButton.Clicked += (_, e) =>
         {
+            e.PreventDefault();
             Game1.playSound("drumkit6");
             var activeTab = menu.Components.OfType<TabEditor>().FirstOrDefault(tab => tab.Active);
             if (activeTab is null)
@@ -500,8 +517,9 @@ internal sealed class MenuFactory
                 Index = index,
             };
 
-            tabEditor.Clicked += (_, _) =>
+            tabEditor.Clicked += (_, e) =>
             {
+                e.PreventDefault();
                 Game1.playSound("drumkit6");
                 textField.Value = tabEditor.Data.SearchTerm;
                 UpdateExpression();
@@ -514,8 +532,9 @@ internal sealed class MenuFactory
                 tabEditor.Active = true;
             };
 
-            tabEditor.MoveDown += (_, _) =>
+            tabEditor.MoveDown += (_, e) =>
             {
+                e.PreventDefault();
                 if (tabEditor.Index >= config.InventoryTabList.Count - 1)
                 {
                     return;
@@ -541,8 +560,9 @@ internal sealed class MenuFactory
                     (menu.Components[newIndex + 1], menu.Components[newIndex]);
             };
 
-            tabEditor.MoveUp += (_, _) =>
+            tabEditor.MoveUp += (_, e) =>
             {
+                e.PreventDefault();
                 if (tabEditor.Index <= 0)
                 {
                     return;
@@ -580,38 +600,21 @@ internal sealed class MenuFactory
         }
     }
 
+    private TextureComponent GetButton(InternalIcon icon, IconStyle style, int x, int y, string hoverText) =>
+        this.iconRegistry.Icon(icon).Component(style).AsBuilder().Location(new Point(x, y)).HoverText(hoverText).Value;
+
+    private TextureComponent GetButton(VanillaIcon icon, IconStyle style, int x, int y, string hoverText) =>
+        this.iconRegistry.Icon(icon).Component(style).AsBuilder().Location(new Point(x, y)).HoverText(hoverText).Value;
+
     private TextureComponent GetCopyButton(int x, int y) =>
-        this
-            .iconRegistry.Icon(InternalIcon.Copy)
-            .Component(IconStyle.Button)
-            .AsBuilder()
-            .Location(new Point(x, y))
-            .HoverText(I18n.Ui_Copy_Tooltip())
-            .Value;
+        this.GetButton(InternalIcon.Copy, IconStyle.Button, x, y, I18n.Ui_Copy_Tooltip());
 
     private TextureComponent GetOkButton(int x, int y) =>
-        this
-            .iconRegistry.Icon(VanillaIcon.Ok)
-            .Component(IconStyle.Transparent)
-            .AsBuilder()
-            .Location(new Point(x, y))
-            .Value;
+        this.GetButton(VanillaIcon.Ok, IconStyle.Transparent, x, y, string.Empty);
 
     private TextureComponent GetPasteButton(int x, int y) =>
-        this
-            .iconRegistry.Icon(InternalIcon.Paste)
-            .Component(IconStyle.Button)
-            .AsBuilder()
-            .Location(new Point(x, y))
-            .HoverText(I18n.Ui_Paste_Tooltip())
-            .Value;
+        this.GetButton(InternalIcon.Paste, IconStyle.Button, x, y, I18n.Ui_Paste_Tooltip());
 
     private TextureComponent GetSaveButton(int x, int y) =>
-        this
-            .iconRegistry.Icon(InternalIcon.Save)
-            .Component(IconStyle.Button)
-            .AsBuilder()
-            .Location(new Point(x, y))
-            .HoverText(I18n.Ui_Save_Name())
-            .Value;
+        this.GetButton(InternalIcon.Save, IconStyle.Button, x, y, I18n.Ui_Save_Name());
 }

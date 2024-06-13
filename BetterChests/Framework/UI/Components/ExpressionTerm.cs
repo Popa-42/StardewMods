@@ -77,15 +77,21 @@ internal sealed class ExpressionTerm : ExpressionComponent
         remove => this.expressionChanged -= value;
     }
 
-    private void ChangeAttribute(object? sender, UiEventArgs e) =>
+    private void ChangeAttribute(object? sender, UiEventArgs e)
+    {
+        e.PreventDefault();
         this.expressionChanged?.InvokeAll(
             sender,
             new ExpressionChangedEventArgs(ExpressionChange.ChangeAttribute, this.Expression));
+    }
 
-    private void ChangeValue(object? sender, UiEventArgs e) =>
+    private void ChangeValue(object? sender, UiEventArgs e)
+    {
+        e.PreventDefault();
         this.expressionChanged?.InvokeAll(
             sender,
             new ExpressionChangedEventArgs(ExpressionChange.ChangeValue, this.Expression));
+    }
 
     private void Highlight(object? sender, CursorEventArgs e)
     {
@@ -97,10 +103,13 @@ internal sealed class ExpressionTerm : ExpressionComponent
         component.Color = this.BaseColor.Highlight();
     }
 
-    private void RemoveExpression(object? sender, UiEventArgs e) =>
+    private void RemoveExpression(object? sender, UiEventArgs e)
+    {
+        e.PreventDefault();
         this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
+    }
 
     private void Unhighlight(object? sender, CursorEventArgs e)
     {

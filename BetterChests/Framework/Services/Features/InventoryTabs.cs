@@ -1,11 +1,9 @@
 namespace StardewMods.BetterChests.Framework.Services.Features;
 
-using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Interfaces;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.UI.Components;
 using StardewMods.Common.Interfaces;
-using StardewMods.Common.Models.Events;
 using StardewMods.Common.Services;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
@@ -17,7 +15,6 @@ internal sealed class InventoryTabs : BaseFeature<InventoryTabs>
     private readonly IExpressionHandler expressionHandler;
     private readonly IIconRegistry iconRegistry;
     private readonly MenuHandler menuHandler;
-    private readonly PerScreen<List<InventoryTab>> tabs = new(() => []);
 
     /// <summary>Initializes a new instance of the <see cref="InventoryTabs" /> class.</summary>
     /// <param name="eventManager">Dependency used for managing events.</param>
@@ -49,43 +46,21 @@ internal sealed class InventoryTabs : BaseFeature<InventoryTabs>
     protected override void Deactivate() =>
         this.Events.Unsubscribe<InventoryMenuChangedEventArgs>(this.OnInventoryMenuChanged);
 
-    private void OnClicked(object? sender, UiEventArgs e)
-    {
-        if (sender is not InventoryTab tab)
-        {
-            return;
-        }
-
-        Log.Trace("{0}: Switching tab to {1}.", this.Id, tab.Data.Label);
-        Game1.playSound("drumkit6");
-        _ = this.expressionHandler.TryParseExpression(tab.Data.SearchTerm, out var expression);
-        this.Events.Publish(new SearchChangedEventArgs(tab.Data.SearchTerm, expression));
-    }
-
     private void OnInventoryMenuChanged(InventoryMenuChangedEventArgs e)
     {
-        var container = this.menuHandler.Top.Container;
-        var top = this.menuHandler.Top;
-        this.tabs.Value.Clear();
-
-        if (this.menuHandler.CurrentMenu is not ItemGrabMenu
-            || top.InventoryMenu is null
-            || container is not
-            {
-                InventoryTabs: FeatureOption.Enabled,
-                SearchItems: FeatureOption.Enabled,
-            })
+        if (this.menuHandler.Top?.Menu is not InventoryMenu inventoryMenu
+            || this.menuHandler.Top.Container.InventoryTabs is not FeatureOption.Enabled)
         {
             return;
         }
 
         var x = Math.Min(
-                top.InventoryMenu.xPositionOnScreen,
-                this.menuHandler.Bottom.InventoryMenu?.xPositionOnScreen ?? int.MaxValue)
+                this.menuHandler.Top.Menu.xPositionOnScreen,
+                this.menuHandler.Bottom?.Menu.xPositionOnScreen ?? int.MaxValue)
             - Game1.tileSize
             - IClickableMenu.borderWidth;
 
-        var y = top.InventoryMenu.inventory[0].bounds.Y;
+        var y = inventoryMenu.inventory[0].bounds.Y;
 
         foreach (var tabData in this.Config.InventoryTabList)
         {
@@ -95,8 +70,16 @@ internal sealed class InventoryTabs : BaseFeature<InventoryTabs>
             }
 
             var tabIcon = new InventoryTab(x, y, icon, tabData);
-            tabIcon.Clicked += this.OnClicked;
-            e.AddComponent(tabIcon);
+            tabIcon.Clicked += (sender, e) =>
+            {
+                e.PreventDefault();
+                Log.Trace("{0}: Switching tab to {1}.", this.Id, tabIcon.Data.Label);
+                Game1.playSound("drumkit6");
+                _ = this.expressionHandler.TryParseExpression(tabIcon.Data.SearchTerm, out var expression);
+                this.Events.Publish(new SearchChangedEventArgs(tabIcon.Data.SearchTerm, expression));
+            };
+
+            this.menuHandler.Top.Components.Add(tabIcon);
 
             y += Game1.tileSize;
         }

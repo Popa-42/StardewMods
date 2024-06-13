@@ -67,9 +67,21 @@ internal class BaseMenu : IClickableMenu
         set
         {
             this.RepositionComponents(value);
+            var delta = value - this.bounds.Location;
             this.bounds.Location = value;
             this.xPositionOnScreen = value.X;
             this.yPositionOnScreen = value.Y;
+
+            if (delta.Equals(Point.Zero))
+            {
+                return;
+            }
+
+            var newPartitions =
+                this.partitions.Select(partition => partition with { Location = partition.Location + delta });
+
+            this.partitions.Clear();
+            this.partitions.AddRange(newPartitions);
         }
     }
 
@@ -141,6 +153,7 @@ internal class BaseMenu : IClickableMenu
 
         // Draw over
         this.DrawOver(b, cursor);
+        Game1.activeClickableMenu.drawMouse(b);
     }
 
     /// <inheritdoc />

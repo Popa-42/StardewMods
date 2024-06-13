@@ -25,6 +25,9 @@ internal static class CommonExtensions
     private static readonly Dictionary<Color, Color> HighlightedColors = new();
     private static readonly Dictionary<Color, Color> MutedColors = new();
 
+    /// <summary>Creates an instance of IComponentBuilder using the provided ClickableTextureComponent object.</summary>
+    /// <param name="component">The ClickableTextureComponent object to build.</param>
+    /// <returns>An instance of IComponentBuilder.</returns>
     public static IComponentBuilder AsBuilder(this ClickableTextureComponent component) =>
         new ComponentBuilder(component);
 

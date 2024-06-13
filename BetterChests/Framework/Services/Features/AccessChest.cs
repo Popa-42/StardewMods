@@ -108,7 +108,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
             this.isActive.Value = !this.isActive.Value;
             if (this.isActive.Value)
             {
-                if (this.menuHandler.Top.Container is not null)
+                if (this.menuHandler.Top?.Container is not null)
                 {
                     var currentIndex = this.currentContainers.Value.IndexOf(this.menuHandler.Top.Container);
 
@@ -131,7 +131,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
         }
 
         focus.Release();
-        if (this.menuHandler.Top.Container is null)
+        if (this.menuHandler.Top?.Container is null)
         {
             // Do nothing
         }
@@ -193,7 +193,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
         }
 
         if (this.currentContainer.Value is null
-            || this.menuHandler.Top.Container is null
+            || this.menuHandler.Top?.Container is null
             || !this.menuHandler.CanFocus(this))
         {
             return;
@@ -229,7 +229,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
     {
         this.isActive.Value = false;
         var top = this.menuHandler.Top;
-        if (top.Container?.AccessChest is RangeOption.Disabled or null)
+        if (top?.Container.AccessChest is RangeOption.Disabled or null)
         {
             this.currentContainer.Value = null;
             return;
@@ -306,7 +306,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
         var cursor = UiToolkit.Cursor;
 
         // Draw current container index
-        if (this.menuHandler.Top.Container is not null && this.Config.AccessChestsShowArrows)
+        if (this.menuHandler.Top?.Container is not null && this.Config.AccessChestsShowArrows)
         {
             var currentIndex = this.currentContainers.Value.IndexOf(this.menuHandler.Top.Container);
             if (currentIndex != -1)
@@ -343,7 +343,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
 
         // Draw current container icon
         IIcon? icon = null;
-        if (this.menuHandler.Top.Container is not null
+        if (this.menuHandler.Top?.Container is not null
             && !string.IsNullOrWhiteSpace(this.menuHandler.Top.Container.StorageIcon)
             && this.iconRegistry.TryGetIcon(this.menuHandler.Top.Container.StorageIcon, out var storageIcon))
         {
@@ -476,7 +476,7 @@ internal sealed class AccessChest : BaseFeature<AccessChest>
     private void ReinitializeContainers()
     {
         var top = this.menuHandler.Top;
-        if (this.currentContainer.Value is null || top.Container is null)
+        if (this.currentContainer.Value is null || top?.Container is null)
         {
             return;
         }

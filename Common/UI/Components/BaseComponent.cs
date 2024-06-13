@@ -264,18 +264,20 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return false;
         }
 
+        var uiEventArgs = new UiEventArgs(SButton.MouseLeft, cursor);
+
         // Left-click components
         foreach (var component in this
             .Components.OfType<ICustomComponent>()
             .Reverse()
             .Where(component => component.TryLeftClick(cursor)))
         {
-            this.InvokeClicked(component, new UiEventArgs(SButton.Left, cursor));
-            return true;
+            this.InvokeClicked(component, uiEventArgs);
+            return uiEventArgs.Handled;
         }
 
-        this.InvokeClicked(this, new UiEventArgs(SButton.MouseLeft, cursor));
-        return true;
+        this.InvokeClicked(this, uiEventArgs);
+        return uiEventArgs.Handled;
     }
 
     /// <inheritdoc />
@@ -286,18 +288,20 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return false;
         }
 
+        var uiEventArgs = new UiEventArgs(SButton.Right, cursor);
+
         // Right-click components
         foreach (var component in this
             .Components.OfType<ICustomComponent>()
             .Reverse()
             .Where(component => component.TryRightClick(cursor)))
         {
-            this.InvokeClicked(component, new UiEventArgs(SButton.Right, cursor));
-            return true;
+            this.InvokeClicked(component, uiEventArgs);
+            return uiEventArgs.Handled;
         }
 
-        this.InvokeClicked(this, new UiEventArgs(SButton.Right, cursor));
-        return true;
+        this.InvokeClicked(this, uiEventArgs);
+        return uiEventArgs.Handled;
     }
 
     /// <inheritdoc />
@@ -308,22 +312,24 @@ internal abstract class BaseComponent : ClickableComponent, ICustomComponent
             return false;
         }
 
-        if (!this.Overflow.Equals(Point.Zero) && direction != 0)
+        var scrolledEventArgs = new ScrolledEventArgs(cursor, direction);
+        var oldY = this.Offset.Y;
+        this.InvokeScrolled(this, scrolledEventArgs);
+        if (scrolledEventArgs.Handled || this.Overflow.Equals(Point.Zero) || direction == 0)
         {
-            var oldY = this.Offset.Y;
-            this.Offset = new Point(0, this.Offset.Y + (direction > 0 ? -32 : 32));
-            if (oldY == this.Offset.Y)
-            {
-                return true;
-            }
-
-            Game1.playSound("shiny4");
-            this.InvokeScrolled(this, new ScrolledEventArgs(cursor, direction));
-            return true;
+            return scrolledEventArgs.Handled;
         }
 
-        this.InvokeScrolled(this, new ScrolledEventArgs(cursor, direction));
-        return false;
+        // Apply default handling
+        this.Offset = new Point(0, this.Offset.Y + (direction > 0 ? -32 : 32));
+        if (oldY == this.Offset.Y)
+        {
+            return scrolledEventArgs.Handled;
+        }
+
+        scrolledEventArgs.PreventDefault();
+        Game1.playSound("shiny4");
+        return scrolledEventArgs.Handled;
     }
 
     /// <inheritdoc />

@@ -29,6 +29,7 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
     private readonly MenuHandler menuHandler;
     private readonly IPatchManager patchManager;
     private readonly IReflectionHelper reflectionHelper;
+    private readonly StateManager stateManager;
 
     /// <summary>Initializes a new instance of the <see cref="HslColorPicker" /> class.</summary>
     /// <param name="assetHandler">Dependency used for handling assets.</param>
@@ -39,6 +40,7 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
     /// <param name="modConfig">Dependency used for accessing config data.</param>
     /// <param name="patchManager">Dependency used for managing patches.</param>
     /// <param name="reflectionHelper">Dependency used for reflecting into non-public code.</param>
+    /// <param name="stateManager">Dependency used for managing state.</param>
     public HslColorPicker(
         AssetHandler assetHandler,
         IEventManager eventManager,
@@ -47,7 +49,8 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
         MenuHandler menuHandler,
         IModConfig modConfig,
         IPatchManager patchManager,
-        IReflectionHelper reflectionHelper)
+        IReflectionHelper reflectionHelper,
+        StateManager stateManager)
         : base(eventManager, modConfig)
     {
         HslColorPicker.instance = this;
@@ -57,6 +60,7 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
         this.menuHandler = menuHandler;
         this.patchManager = patchManager;
         this.reflectionHelper = reflectionHelper;
+        this.stateManager = stateManager;
 
         this.patchManager.Add(
             this.UniqueId,
@@ -182,13 +186,14 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
     private void OnButtonPressed(ButtonPressedEventArgs e)
     {
         if (this.colorPicker.Value is null
+            || this.stateManager.ActiveMenu is not ItemGrabMenu itemGrabMenu
             || e.Button is not (SButton.MouseLeft or SButton.MouseRight or SButton.ControllerA or SButton.ControllerX))
         {
             return;
         }
 
         var cursor = e.Cursor.GetScaledScreenPixels().ToPoint();
-        if ((this.menuHandler.CurrentMenu as ItemGrabMenu)?.colorPickerToggleButton.bounds.Contains(cursor) == true)
+        if (itemGrabMenu.colorPickerToggleButton.bounds.Contains(cursor))
         {
             this.inputHelper.Suppress(e.Button);
             Game1.playSound("drumkit6");
@@ -214,14 +219,14 @@ internal sealed class HslColorPicker : BaseFeature<HslColorPicker>
 
     private void OnInventoryMenuChanged(InventoryMenuChangedEventArgs e)
     {
-        if (this.menuHandler.CurrentMenu is not ItemGrabMenu
+        if (this.stateManager.ActiveMenu is not ItemGrabMenu
             {
                 chestColorPicker:
                 {
                     itemToDrawColored: Chest chest,
                 } chestColorPicker,
             } itemGrabMenu
-            || this.menuHandler.Top.Container is not ChestContainer
+            || this.menuHandler.Top?.Container is not ChestContainer
             {
                 HslColorPicker: FeatureOption.Enabled,
             } container

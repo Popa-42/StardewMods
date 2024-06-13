@@ -85,8 +85,8 @@ internal sealed class CategorizeChest : BaseFeature<CategorizeChest>
 
     private void OnItemHighlighting(ItemHighlightingEventArgs e)
     {
-        var top = this.menuHandler.Top.Container;
-        if (e.Container == this.menuHandler.Bottom.Container
+        var top = this.menuHandler.Top?.Container;
+        if (e.Container == this.menuHandler.Bottom?.Container
             && top is
             {
                 CategorizeChest: FeatureOption.Enabled,
@@ -112,7 +112,7 @@ internal sealed class CategorizeChest : BaseFeature<CategorizeChest>
     private void OnItemsDisplaying(ItemsDisplayingEventArgs e)
     {
         // Append searched items to the end of the list
-        if (e.Container == this.menuHandler.Top.Container
+        if (e.Container == this.menuHandler.Top?.Container
             && e.Container.CategorizeChest is FeatureOption.Enabled
             && this.cachedItems.Value.Any())
         {

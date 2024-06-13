@@ -32,6 +32,7 @@ internal sealed class StorageInfo : BaseFeature<StorageInfo>
     private readonly PerScreen<bool> isActive = new();
     private readonly MenuHandler menuHandler;
     private readonly PerScreen<bool> resetCache = new(() => true);
+    private readonly StateManager stateManager;
 
     /// <summary>Initializes a new instance of the <see cref="StorageInfo" /> class.</summary>
     /// <param name="containerFactory">Dependency used for accessing containers.</param>
@@ -40,19 +41,22 @@ internal sealed class StorageInfo : BaseFeature<StorageInfo>
     /// <param name="inputHelper">Dependency used for checking and changing input state.</param>
     /// <param name="menuHandler">Dependency used for managing the current menu.</param>
     /// <param name="modConfig">Dependency used for accessing config data.</param>
+    /// <param name="stateManager">Dependency used for managing state.</param>
     public StorageInfo(
         ContainerFactory containerFactory,
         IEventManager eventManager,
         IIconRegistry iconRegistry,
         IInputHelper inputHelper,
         MenuHandler menuHandler,
-        IModConfig modConfig)
+        IModConfig modConfig,
+        StateManager stateManager)
         : base(eventManager, modConfig)
     {
         this.containerFactory = containerFactory;
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;
         this.menuHandler = menuHandler;
+        this.stateManager = stateManager;
     }
 
     /// <inheritdoc />
@@ -98,13 +102,11 @@ internal sealed class StorageInfo : BaseFeature<StorageInfo>
 
     private void OnRenderedActiveMenu(RenderedActiveMenuEventArgs e)
     {
-        var container = this.menuHandler.Top.Container;
-
         // Check if active
         if (!this.Config.StorageInfoMenuItems.Any()
             || !this.isActive.Value
-            || this.menuHandler.CurrentMenu is null
-            || container?.StorageInfo != FeatureOption.Enabled)
+            || this.stateManager.ActiveMenu is null
+            || this.menuHandler.Top?.Container.StorageInfo is not FeatureOption.Enabled)
         {
             return;
         }
@@ -112,7 +114,7 @@ internal sealed class StorageInfo : BaseFeature<StorageInfo>
         // Check if info needs to be refreshed
         if (this.resetCache.Value)
         {
-            this.RefreshInfo(container);
+            this.RefreshInfo(this.menuHandler.Top.Container);
             this.resetCache.Value = false;
         }
 
@@ -130,8 +132,8 @@ internal sealed class StorageInfo : BaseFeature<StorageInfo>
             return;
         }
 
-        var x = this.menuHandler.CurrentMenu.xPositionOnScreen - (IClickableMenu.borderWidth / 2) - 384;
-        var y = this.menuHandler.CurrentMenu.yPositionOnScreen;
+        var x = this.stateManager.ActiveMenu.xPositionOnScreen - (IClickableMenu.borderWidth / 2) - 384;
+        var y = this.stateManager.ActiveMenu.yPositionOnScreen;
 
         // Draw background
         Game1.drawDialogueBox(

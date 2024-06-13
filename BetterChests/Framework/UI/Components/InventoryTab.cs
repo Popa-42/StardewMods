@@ -11,7 +11,7 @@ using StardewValley.Menus;
 /// <summary>A component with an icon that expands into a label when hovered.</summary>
 internal sealed class InventoryTab : BaseComponent
 {
-    private readonly ClickableTextureComponent icon;
+    private readonly TextureComponent icon;
     private readonly Vector2 origin;
     private readonly int overrideWidth;
     private readonly int textWidth;
@@ -29,7 +29,10 @@ internal sealed class InventoryTab : BaseComponent
         this.Data = tabData;
         this.overrideWidth = overrideWidth;
         this.origin = new Vector2(x, y);
-        this.icon = icon.Component(IconStyle.Transparent).AsBuilder().Location(new Point(x - Game1.tileSize, y)).Value;
+        this.icon = icon.Component(IconStyle.Transparent, scale: 3f).AsBuilder().Value;
+        this.icon.Location = new Point(
+            this.Bounds.Center.X - (this.icon.Size.X / 2) + 32,
+            this.Bounds.Center.Y - (this.icon.Size.Y / 2));
 
         this.textWidth = textBounds.X;
 
@@ -52,7 +55,7 @@ internal sealed class InventoryTab : BaseComponent
     public override void Draw(SpriteBatch spriteBatch, Point cursor)
     {
         cursor -= this.Offset;
-        var hover = this.bounds.Contains(cursor);
+        var hover = this.Bounds.Contains(cursor);
         var color = this.Active
             ? Color.White
             : hover
@@ -63,10 +66,10 @@ internal sealed class InventoryTab : BaseComponent
         spriteBatch.Draw(
             Game1.mouseCursors,
             new Rectangle(
-                this.bounds.X + this.Offset.X + 20,
-                this.bounds.Y + this.Offset.Y,
-                this.bounds.Width - 40,
-                this.bounds.Height),
+                this.Bounds.X + this.Offset.X + 12,
+                this.Bounds.Y + this.Offset.Y,
+                this.Bounds.Width - 32,
+                this.Bounds.Height),
             new Rectangle(21, 368, 6, 16),
             color,
             0,
@@ -78,9 +81,9 @@ internal sealed class InventoryTab : BaseComponent
         spriteBatch.Draw(
             Game1.mouseCursors,
             new Rectangle(
-                this.bounds.X + this.Offset.X + 20,
-                this.bounds.Y + this.bounds.Height + this.Offset.Y - 20,
-                this.bounds.Width - 40,
+                this.Bounds.X + this.Offset.X + 12,
+                this.Bounds.Bottom + this.Offset.Y - 20,
+                this.Bounds.Width - 32,
                 20),
             new Rectangle(21, 368, 6, 5),
             color,
@@ -92,7 +95,7 @@ internal sealed class InventoryTab : BaseComponent
         // Top-Left
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.X + this.Offset.X, this.bounds.Y + this.Offset.Y),
+            new Vector2(this.Bounds.X + this.Offset.X, this.Bounds.Y + this.Offset.Y),
             new Rectangle(16, 368, 5, 15),
             color,
             0,
@@ -104,7 +107,7 @@ internal sealed class InventoryTab : BaseComponent
         // Bottom-Left
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.X + this.Offset.X, this.bounds.Y + this.bounds.Height + this.Offset.Y - 20),
+            new Vector2(this.Bounds.X + this.Offset.X, this.Bounds.Bottom + this.Offset.Y - 20),
             new Rectangle(16, 368, 5, 5),
             color,
             0,
@@ -116,7 +119,7 @@ internal sealed class InventoryTab : BaseComponent
         // Top-Right
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(this.bounds.Right + this.Offset.X - 20, this.bounds.Y + this.Offset.Y),
+            new Vector2(this.Bounds.Right + this.Offset.X - 20, this.Bounds.Y + this.Offset.Y),
             new Rectangle(16, 368, 5, 15),
             color,
             0,
@@ -128,9 +131,7 @@ internal sealed class InventoryTab : BaseComponent
         // Bottom-Right
         spriteBatch.Draw(
             Game1.mouseCursors,
-            new Vector2(
-                this.bounds.Right + this.Offset.X - 20,
-                this.bounds.Y + this.bounds.Height + this.Offset.Y - 20),
+            new Vector2(this.Bounds.Right + this.Offset.X - 20, this.Bounds.Bottom + this.Offset.Y - 20),
             new Rectangle(16, 368, 5, 5),
             color,
             0,
@@ -174,6 +175,6 @@ internal sealed class InventoryTab : BaseComponent
             : Math.Max(this.bounds.Width - 16, Game1.tileSize);
 
         this.bounds.X = (int)this.origin.X - this.bounds.Width;
-        this.icon.bounds.X = this.bounds.X;
+        this.icon.bounds.X = this.Bounds.X - (this.icon.Size.X / 2) + 32;
     }
 }

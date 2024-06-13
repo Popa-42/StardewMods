@@ -166,7 +166,12 @@ internal sealed class VerticalScrollBar : BaseComponent
     public void Attach(BaseComponent component)
     {
         component.OverflowChanged += (_, _) => this.IsVisible = !component.Overflow.Equals(Point.Zero);
-        component.Scrolled += (_, _) => this.Value = (float)component.Offset.Y / component.Overflow.Y;
+        component.Scrolled += (_, e) =>
+        {
+            this.Value = (float)component.Offset.Y / component.Overflow.Y;
+            e.PreventDefault();
+        };
+
         this.arrowUp.Clicked += (_, _) =>
         {
             component.Offset = new Point(component.Offset.X, component.Offset.Y - 32);

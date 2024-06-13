@@ -235,10 +235,13 @@ internal sealed class ExpressionGroup : ExpressionComponent
     private void OnExpressionChanged(object? sender, ExpressionChangedEventArgs e) =>
         this.expressionChanged?.InvokeAll(sender, e);
 
-    private void RemoveExpression(object? sender, UiEventArgs e) =>
+    private void RemoveExpression(object? sender, UiEventArgs e)
+    {
+        e.PreventDefault();
         this.expressionChanged?.InvokeAll(
             this,
             new ExpressionChangedEventArgs(ExpressionChange.Remove, this.Expression));
+    }
 
     private void Unhighlight(object? sender, CursorEventArgs e)
     {

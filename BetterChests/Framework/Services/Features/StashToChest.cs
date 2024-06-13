@@ -18,16 +18,15 @@ using StardewValley.Menus;
 /// <summary>Stash items into placed chests and chests in the farmer's inventory.</summary>
 internal sealed class StashToChest : BaseFeature<StashToChest>
 {
-    private readonly AssetHandler assetHandler;
     private readonly ContainerFactory containerFactory;
     private readonly ContainerHandler containerHandler;
     private readonly IIconRegistry iconRegistry;
     private readonly IInputHelper inputHelper;
     private readonly MenuHandler menuHandler;
+    private readonly StateManager stateManager;
     private readonly ToolbarIconsIntegration toolbarIconsIntegration;
 
     /// <summary>Initializes a new instance of the <see cref="StashToChest" /> class.</summary>
-    /// <param name="assetHandler">Dependency used for handling assets.</param>
     /// <param name="containerFactory">Dependency used for accessing containers.</param>
     /// <param name="containerHandler">Dependency used for handling operations by containers.</param>
     /// <param name="eventManager">Dependency used for managing events.</param>
@@ -35,9 +34,9 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
     /// <param name="inputHelper">Dependency used for checking and changing input state.</param>
     /// <param name="menuHandler">Dependency used for managing the current menu.</param>
     /// <param name="modConfig">Dependency used for accessing config data.</param>
+    /// <param name="stateManager">Dependency used for managing state.</param>
     /// <param name="toolbarIconsIntegration">Dependency for Toolbar Icons integration.</param>
     public StashToChest(
-        AssetHandler assetHandler,
         ContainerFactory containerFactory,
         ContainerHandler containerHandler,
         IEventManager eventManager,
@@ -45,15 +44,16 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
         IInputHelper inputHelper,
         MenuHandler menuHandler,
         IModConfig modConfig,
+        StateManager stateManager,
         ToolbarIconsIntegration toolbarIconsIntegration)
         : base(eventManager, modConfig)
     {
-        this.assetHandler = assetHandler;
         this.containerFactory = containerFactory;
         this.containerHandler = containerHandler;
         this.iconRegistry = iconRegistry;
         this.inputHelper = inputHelper;
         this.menuHandler = menuHandler;
+        this.stateManager = stateManager;
         this.toolbarIconsIntegration = toolbarIconsIntegration;
     }
 
@@ -69,7 +69,7 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
         this.Events.Subscribe<RenderingActiveMenuEventArgs>(this.OnRenderingActiveMenu);
 
         // Integrations
-        if (!this.toolbarIconsIntegration.IsLoaded || !this.iconRegistry.TryGetIcon(InternalIcon.Stash, out var icon))
+        if (!this.toolbarIconsIntegration.IsLoaded)
         {
             return;
         }
@@ -111,13 +111,11 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
 
     private void OnButtonPressed(ButtonPressedEventArgs e)
     {
-        if (e.Button is not SButton.MouseLeft
-            || this.menuHandler.CurrentMenu is not ItemGrabMenu itemGrabMenu
+        if (e.Button is not (SButton.MouseLeft or SButton.ControllerA)
+            || this.stateManager.ActiveMenu is not ItemGrabMenu itemGrabMenu
             || itemGrabMenu.fillStacksButton is null
-            || this.menuHandler.Bottom.Container is null
-            || this.menuHandler.Top.Container is null
-            || !this.containerFactory.TryGetOne(this.menuHandler.Top.Menu, out var container)
-            || container.StashToChest is RangeOption.Disabled)
+            || this.menuHandler.Bottom?.Container is null
+            || this.menuHandler.Top?.Container.StashToChest is null or RangeOption.Disabled)
         {
             return;
         }
@@ -161,15 +159,14 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
             return;
         }
 
-        if (!this.containerFactory.TryGetOne(this.menuHandler.Top.Menu, out var container)
-            || container.StashToChest is RangeOption.Disabled)
+        if (this.menuHandler.Top?.Container.StashToChest is null or RangeOption.Disabled)
         {
             return;
         }
 
         // Stash to Current
         this.inputHelper.SuppressActiveKeybinds(this.Config.Controls.StashItems);
-        this.StashIntoContainer(container);
+        this.StashIntoContainer(this.menuHandler.Top.Container);
         Game1.playSound("Ship");
     }
 
@@ -181,12 +178,11 @@ internal sealed class StashToChest : BaseFeature<StashToChest>
         }
     }
 
-    private void OnRenderingActiveMenu(RenderingActiveMenuEventArgs obj)
+    private void OnRenderingActiveMenu(RenderingActiveMenuEventArgs e)
     {
-        var container = this.menuHandler.Top.Container;
-        if (this.menuHandler.CurrentMenu is not ItemGrabMenu itemGrabMenu
-            || itemGrabMenu.fillStacksButton is null
-            || container?.StashToChest is RangeOption.Disabled)
+        if (this.stateManager.ActiveMenu is not ItemGrabMenu itemGrabMenu
+            || this.menuHandler.Top?.Container.StashToChest is null or RangeOption.Disabled
+            || itemGrabMenu.fillStacksButton is null)
         {
             return;
         }

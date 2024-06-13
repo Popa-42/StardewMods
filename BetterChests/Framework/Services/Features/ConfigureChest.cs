@@ -1,10 +1,13 @@
 namespace StardewMods.BetterChests.Framework.Services.Features;
 
+using Microsoft.Xna.Framework;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewMods.BetterChests.Framework.Enums;
 using StardewMods.BetterChests.Framework.Models.Events;
 using StardewMods.BetterChests.Framework.Services.Factory;
+using StardewMods.BetterChests.Framework.UI.Overlays;
+using StardewMods.Common.Helpers;
 using StardewMods.Common.Interfaces;
 using StardewMods.Common.Services.Integrations.BetterChests;
 using StardewMods.Common.Services.Integrations.FauxCore;
@@ -24,6 +27,7 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     private readonly PerScreen<IStorageContainer?> lastContainer = new();
     private readonly MenuFactory menuFactory;
     private readonly MenuHandler menuHandler;
+    private readonly StateManager stateManager;
 
     /// <summary>Initializes a new instance of the <see cref="ConfigureChest" /> class.</summary>
     /// <param name="configManager">Dependency used for managing config data.</param>
@@ -35,6 +39,7 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     /// <param name="inputHelper">Dependency used for checking and changing input state.</param>
     /// <param name="menuFactory">Dependency used for creating menus.</param>
     /// <param name="menuHandler">Dependency used for managing the current menu.</param>
+    /// <param name="stateManager">Dependency used for managing state.</param>
     public ConfigureChest(
         ConfigManager configManager,
         ContainerFactory containerFactory,
@@ -44,7 +49,8 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
         IIconRegistry iconRegistry,
         IInputHelper inputHelper,
         MenuFactory menuFactory,
-        MenuHandler menuHandler)
+        MenuHandler menuHandler,
+        StateManager stateManager)
         : base(eventManager, configManager)
     {
         this.configManager = configManager;
@@ -55,6 +61,7 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
         this.inputHelper = inputHelper;
         this.menuFactory = menuFactory;
         this.menuHandler = menuHandler;
+        this.stateManager = stateManager;
     }
 
     /// <inheritdoc />
@@ -72,8 +79,8 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     protected override void Activate()
     {
         // Events
+        this.Events.Subscribe<InventoryMenuChangedEventArgs>(this.OnInventoryMenuChanged);
         this.Events.Subscribe<MenuChangedEventArgs>(this.OnMenuChanged);
-        this.Events.Subscribe<ButtonPressedEventArgs>(this.OnButtonPressed);
         this.Events.Subscribe<ButtonsChangedEventArgs>(this.OnButtonsChanged);
         this.Events.Subscribe<ItemHighlightingEventArgs>(ConfigureChest.OnItemHighlighting);
     }
@@ -82,8 +89,8 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
     protected override void Deactivate()
     {
         // Events
+        this.Events.Unsubscribe<InventoryMenuChangedEventArgs>(this.OnInventoryMenuChanged);
         this.Events.Unsubscribe<MenuChangedEventArgs>(this.OnMenuChanged);
-        this.Events.Unsubscribe<ButtonPressedEventArgs>(this.OnButtonPressed);
         this.Events.Unsubscribe<ButtonsChangedEventArgs>(this.OnButtonsChanged);
         this.Events.Unsubscribe<ItemHighlightingEventArgs>(ConfigureChest.OnItemHighlighting);
     }
@@ -116,53 +123,6 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
         return string.Empty;
     }
 
-    private void OnButtonPressed(ButtonPressedEventArgs e)
-    {
-        if (e.Button is not (SButton.MouseLeft or SButton.ControllerA)
-            || e.IsSuppressed(e.Button)
-            || !this.menuHandler.TryGetFocus(this, out var focus))
-        {
-            return;
-        }
-
-        var cursor = e.Cursor.GetScaledScreenPixels();
-        IStorageContainer? container = null;
-        ClickableTextureComponent? icon = null;
-        if (this.menuHandler.Top.Container?.ConfigureChest is FeatureOption.Enabled
-            && this.menuHandler.Top.Icon?.bounds.Contains(cursor) == true)
-        {
-            container = this.menuHandler.Top.Container;
-            icon = this.menuHandler.Top.Icon;
-        }
-
-        if (container is null
-            && this.menuHandler.Bottom.Container?.ConfigureChest is FeatureOption.Enabled
-            && this.menuHandler.Bottom.Icon?.bounds.Contains(cursor) == true)
-        {
-            container = this.menuHandler.Bottom.Container;
-            icon = this.menuHandler.Bottom.Icon;
-        }
-
-        if (container is null || icon is null)
-        {
-            focus.Release();
-            return;
-        }
-
-        var options = new List<IIcon>
-        {
-            this.ConfigureIcon,
-            this.CategorizeIcon,
-            this.SortIcon,
-        };
-
-        focus.Release();
-        this.inputHelper.Suppress(e.Button);
-        var dropdown = new IconDropdown(icon, options, 3, 1, this.GetHoverText);
-        dropdown.IconSelected += (_, i) => this.ShowMenu(container, i);
-        Game1.activeClickableMenu?.SetChildMenu(dropdown);
-    }
-
     private void OnButtonsChanged(ButtonsChangedEventArgs e)
     {
         if (!Context.IsPlayerFree
@@ -175,6 +135,19 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
 
         this.inputHelper.SuppressActiveKeybinds(this.Config.Controls.ConfigureChest);
         this.ShowMenu(container, this.ConfigureIcon);
+    }
+
+    private void OnInventoryMenuChanged(InventoryMenuChangedEventArgs e)
+    {
+        if (this.menuHandler.Top?.Container.ConfigureChest is FeatureOption.Enabled)
+        {
+            this.SetupConfigureChest(this.menuHandler.Top);
+        }
+
+        if (this.menuHandler.Bottom?.Container.ConfigureChest is FeatureOption.Enabled)
+        {
+            this.SetupConfigureChest(this.menuHandler.Bottom);
+        }
     }
 
     private void OnMenuChanged(MenuChangedEventArgs e)
@@ -196,6 +169,63 @@ internal sealed class ConfigureChest : BaseFeature<ConfigureChest>
 
         this.lastContainer.Value.ShowMenu();
         this.lastContainer.Value = null;
+    }
+
+    private void SetupConfigureChest(MenuOverlay overlay)
+    {
+        var location = this.stateManager.ActiveMenu switch
+        {
+            ItemGrabMenu itemGrabMenu when overlay == this.menuHandler.Top =>
+                new Point(overlay.Menu.xPositionOnScreen - Game1.tileSize - 36, itemGrabMenu.yPositionOnScreen + 4),
+            ItemGrabMenu itemGrabMenu when overlay == this.menuHandler.Bottom => new Point(
+                itemGrabMenu.xPositionOnScreen - Game1.tileSize,
+                itemGrabMenu.yPositionOnScreen + (int)(itemGrabMenu.height / 2f) + 4),
+            InventoryPage => new Point(
+                overlay.Menu.xPositionOnScreen - Game1.tileSize - 36,
+                overlay.Menu.yPositionOnScreen + 24),
+            ShopMenu shopMenu when !shopMenu.tabButtons.Any() && overlay == this.menuHandler.Top => new Point(
+                shopMenu.xPositionOnScreen - Game1.tileSize + 4,
+                shopMenu.yPositionOnScreen + Game1.tileSize + 24),
+            ShopMenu when overlay == this.menuHandler.Bottom => new Point(
+                overlay.Menu.xPositionOnScreen - Game1.tileSize - 20,
+                overlay.Menu.yPositionOnScreen + 24),
+            _ => Point.Zero,
+        };
+
+        if (location.Equals(Point.Zero))
+        {
+            return;
+        }
+
+        var icon = !string.IsNullOrWhiteSpace(overlay.Container.StorageIcon)
+            && this.iconRegistry.TryGetIcon(overlay.Container.StorageIcon, out var storageIcon)
+                ? storageIcon
+                : this.iconRegistry.Icon(VanillaIcon.Chest);
+
+        var component =
+            icon
+                .Component(IconStyle.Transparent, "icon")
+                .AsBuilder()
+                .Location(location)
+                .Size(new Point(Game1.tileSize, Game1.tileSize + 12))
+                .Value;
+
+        component.Clicked += (_, e) =>
+        {
+            e.PreventDefault();
+            var options = new List<IIcon>
+            {
+                this.ConfigureIcon,
+                this.CategorizeIcon,
+                this.SortIcon,
+            };
+
+            var dropdown = new IconDropdown(component, options, 3, 1, this.GetHoverText);
+            dropdown.IconSelected += (_, i) => this.ShowMenu(overlay.Container, i);
+            Game1.activeClickableMenu?.SetChildMenu(dropdown);
+        };
+
+        overlay.Components.Add(component);
     }
 
     private void ShowMenu(IStorageContainer container, IIcon? icon)

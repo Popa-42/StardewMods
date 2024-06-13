@@ -1,13 +1,10 @@
 #if IS_FAUXCORE
 namespace StardewMods.FauxCore.Common.Models.Events;
-
-using Microsoft.Xna.Framework;
-
 #else
 namespace StardewMods.Common.Models.Events;
+#endif
 
 using Microsoft.Xna.Framework;
-#endif
 
 /// <summary>The event arguments for a scrolled event.</summary>
 internal sealed class ScrolledEventArgs : EventArgs
@@ -26,4 +23,10 @@ internal sealed class ScrolledEventArgs : EventArgs
 
     /// <summary>Gets the scroll direction.</summary>
     public float Direction { get; }
+
+    /// <summary>Gets a value indicating whether the input has been handled.</summary>
+    public bool Handled { get; private set; }
+
+    /// <summary>Prevents further handling of the input event.</summary>
+    public void PreventDefault() => this.Handled = true;
 }

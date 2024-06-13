@@ -34,7 +34,7 @@ internal sealed class TabEditor : BaseComponent
         // Initialize
         this.Icon = icon;
         this.Data = tabData;
-        this.tabIcon = icon.Component(IconStyle.Transparent, "icon").AsBuilder().Value;
+        this.tabIcon = icon.Component(IconStyle.Transparent, "icon", 3f).AsBuilder().Value;
 
         this.upArrow = iconRegistry
             .Icon(VanillaIcon.ArrowUp)
@@ -67,10 +67,11 @@ internal sealed class TabEditor : BaseComponent
                 }
 
                 this.Data.Icon = selectedIcon.UniqueId;
-                var component = selectedIcon.Component(IconStyle.Transparent);
+                var component = selectedIcon.Component(IconStyle.Transparent, scale: 3f);
                 this.tabIcon.texture = component.texture;
                 this.tabIcon.sourceRect = component.sourceRect;
                 this.tabIcon.BaseScale = component.baseScale;
+                this.RepositionComponents(this.Location);
             };
 
             this.Menu?.SetChildMenu(iconPopup);
@@ -132,8 +133,8 @@ internal sealed class TabEditor : BaseComponent
             Game1.smallFont,
             this.name,
             new Vector2(
-                this.tabIcon.bounds.X + Game1.tileSize + this.Offset.X,
-                this.tabIcon.bounds.Y + (IClickableMenu.borderWidth / 2f) + this.Offset.Y),
+                this.Bounds.X + (Game1.tileSize * 2) + this.Offset.X,
+                this.Bounds.Y + (IClickableMenu.borderWidth / 2f) + this.Offset.Y),
             this.Active ? Game1.textColor : Game1.unselectedOptionColor);
     }
 
@@ -232,11 +233,12 @@ internal sealed class TabEditor : BaseComponent
     /// <inheritdoc />
     protected override void RepositionComponents(Point newLocation)
     {
-        this.tabIcon.bounds.Location = new Point(newLocation.X + Game1.tileSize, newLocation.Y);
-        this.upArrow.bounds.Location = new Point(newLocation.X + 8, newLocation.Y + 8);
-        this.downArrow.bounds.Location = new Point(
-            newLocation.X + this.bounds.Width - Game1.tileSize + 8,
-            newLocation.Y + 8);
+        this.tabIcon.Location = new Point(
+            newLocation.X + Game1.tileSize + 12,
+            newLocation.Y + (this.Bounds.Height / 2) - (this.tabIcon.Bounds.Height / 2));
+
+        this.upArrow.Location = new Point(newLocation.X + 8, newLocation.Y + 8);
+        this.downArrow.Location = new Point(newLocation.X + this.Bounds.Width - Game1.tileSize + 8, newLocation.Y + 8);
     }
 
     private void UpdateColor(object? sender, RenderEventArgs e)
